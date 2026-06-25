@@ -1,4 +1,4 @@
-from windhager.models import Module, Function, Lookup
+from windhager_tools.models import Module, Function, Lookup
 
 
 def discover_modules(client):

@@ -1,7 +1,7 @@
 import json
 from dataclasses import asdict
 
-from windhager.models import (
+from windhager_tools.models import (
     Module,
     Function,
     Lookup,

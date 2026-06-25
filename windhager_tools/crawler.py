@@ -1,9 +1,9 @@
-from windhager.discovery import (
+from windhager_tools.discovery import (
     discover_modules,
     discover_functions,
     discover_lookups,
 )
-from windhager.reader import read_lookup
+from windhager_tools.reader import read_lookup
 
 
 def crawl(client):

@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from windhager.catalog import (
+from windhager_tools.catalog import (
     load_catalog,
     save_catalog,
 )
-from windhager.crawler import crawl
-from windhager.poller import Poller
+from windhager_tools.crawler import crawl
+from windhager_tools.poller import Poller
 
 
 class WindhagerSystem:

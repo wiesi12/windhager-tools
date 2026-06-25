@@ -1,4 +1,4 @@
-from windhager.reader import read_lookup
+from windhager_tools.reader import read_lookup
 
 
 class Poller:
@@ -10,7 +10,7 @@ class Poller:
 
     def poll(self):
 
-        results = []
+        values = {}
 
         for module in self.modules:
 
@@ -25,6 +25,10 @@ class Poller:
                         lookup
                     )
 
-                    results.extend(entries)
+                    for entry in entries:
 
-        return results
+                        if hasattr(entry, "oid"):
+
+                            values[entry.oid] = entry
+
+        return values

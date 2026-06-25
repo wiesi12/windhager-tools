@@ -1,4 +1,4 @@
-from windhager.models import Entry, NvEntry
+from windhager_tools.models import Entry, NvEntry
 
 
 def read_lookup(client, module, function, lookup):

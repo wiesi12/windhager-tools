@@ -1,8 +1,8 @@
 from config import HOST, USER, PASSWORD
-from windhager.catalog import save_catalog
-from windhager.client import WindhagerClient
-from windhager.crawler import crawl
-from windhager.reader import read_lookup
+from windhager_tools.catalog import save_catalog
+from windhager_tools.client import WindhagerClient
+from windhager_tools.crawler import crawl
+from windhager_tools.reader import read_lookup
 
 
 def main():

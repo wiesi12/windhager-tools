@@ -1,8 +1,8 @@
 from config import HOST, USER, PASSWORD
 
-from windhager.catalog import load_catalog
-from windhager.client import WindhagerClient
-from windhager.poller import Poller
+from windhager_tools.catalog import load_catalog
+from windhager_tools.client import WindhagerClient
+from windhager_tools.poller import Poller
 
 
 def main():

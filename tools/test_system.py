@@ -1,7 +1,7 @@
 from config import HOST, USER, PASSWORD
 
-from windhager.client import WindhagerClient
-from windhager.system import WindhagerSystem
+from windhager_tools.client import WindhagerClient
+from windhager_tools.system import WindhagerSystem
 
 
 def main():
@@ -14,20 +14,19 @@ def main():
 
     system = WindhagerSystem(client)
 
-    entries = system.poll()
+    values = system.poll()
 
     print()
 
-    print(f"{len(entries)} Einträge")
+    print(f"{len(values)} OIDs\n")
 
-    for entry in entries[:20]:
+    for oid, entry in list(values.items())[:20]:
 
-        if hasattr(entry, "oid"):
-
-            print(
-                f"{entry.oid} = "
-                f"{entry.value} {entry.unit}"
-            )
+        print(
+            f"{oid} = "
+            f"{entry.value} "
+            f"{entry.unit}"
+        )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from windhager.catalog import load_catalog
+from windhager_tools.catalog import load_catalog
 
 
 def main():
