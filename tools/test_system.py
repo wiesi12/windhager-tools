@@ -1,8 +1,7 @@
 from config import HOST, USER, PASSWORD
 
-from windhager.catalog import load_catalog
 from windhager.client import WindhagerClient
-from windhager.poller import Poller
+from windhager.system import WindhagerSystem
 
 
 def main():
@@ -13,18 +12,13 @@ def main():
         PASSWORD
     )
 
-    print("Verbunden.\n")
+    system = WindhagerSystem(client)
 
-    modules = load_catalog()
+    entries = system.poll()
 
-    poller = Poller(
-        client,
-        modules
-    )
+    print()
 
-    entries = poller.poll()
-
-    print(f"{len(entries)} Einträge gefunden.\n")
+    print(f"{len(entries)} Einträge")
 
     for entry in entries[:20]:
 
@@ -32,13 +26,6 @@ def main():
 
             print(
                 f"{entry.oid} = "
-                f"{entry.value} {entry.unit}"
-            )
-
-        else:
-
-            print(
-                f"{entry.name} = "
                 f"{entry.value} {entry.unit}"
             )
 
