@@ -1,8 +1,10 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from windhager_tools.client import WindhagerClient
-from windhager_tools.system import WindhagerSystem
+from .vendor.windhager_tools import (
+    WindhagerClient,
+    WindhagerSystem,
+)
 
 from .const import DOMAIN
 from .coordinator import WindhagerCoordinator
@@ -20,6 +22,10 @@ async def async_setup_entry(
     )
 
     system = WindhagerSystem(client)
+
+    await hass.async_add_executor_job(
+        system.initialize
+    )
 
     coordinator = WindhagerCoordinator(
         hass,

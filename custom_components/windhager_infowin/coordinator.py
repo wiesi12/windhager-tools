@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -7,13 +8,16 @@ from homeassistant.helpers.update_coordinator import (
 from .const import DOMAIN
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 class WindhagerCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass, system):
 
         super().__init__(
             hass,
-            logger=None,
+            logger=_LOGGER,
             name=DOMAIN,
             update_interval=timedelta(seconds=30),
         )
