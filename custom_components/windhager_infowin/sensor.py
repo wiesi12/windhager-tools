@@ -1,14 +1,33 @@
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorDeviceClass,
+)
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
-import logging
 
 from .const import DOMAIN
 
 
-_LOGGER = logging.getLogger(__name__)
+DIAGNOSTIC_LOOKUPS = {
+    "Modulinfo",
+}
+
+
+DEVICE_CLASSES = {
+    "°C": SensorDeviceClass.TEMPERATURE,
+    "K": SensorDeviceClass.TEMPERATURE,
+    "bar": SensorDeviceClass.PRESSURE,
+    "V": SensorDeviceClass.VOLTAGE,
+    "A": SensorDeviceClass.CURRENT,
+    "Hz": SensorDeviceClass.FREQUENCY,
+    "W": SensorDeviceClass.POWER,
+    "kW": SensorDeviceClass.POWER,
+    "Wh": SensorDeviceClass.ENERGY,
+    "kWh": SensorDeviceClass.ENERGY,
+}
 
 
 async def async_setup_entry(
@@ -20,27 +39,14 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     system = hass.data[DOMAIN][entry.entry_id]["system"]
 
-    for oid, info in list(system.oid_map.items())[:5]:
-
-        _LOGGER.warning(
-            "OID=%s MODULE=%r LOOKUP=%r ENTRY=%r",
+    entities = [
+        WindhagerSensor(
+            coordinator,
+            system,
             oid,
-            info["module"].name,
-            info["lookup"].name,
-            info["entry"].name,
         )
-
-    entities = []
-
-    for oid in coordinator.data:
-
-        entities.append(
-            WindhagerSensor(
-                coordinator,
-                system,
-                oid,
-            )
-        )
+        for oid in coordinator.data
+    ]
 
     async_add_entities(entities)
 
@@ -49,6 +55,8 @@ class WindhagerSensor(
     CoordinatorEntity,
     SensorEntity,
 ):
+
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -63,24 +71,90 @@ class WindhagerSensor(
         self.oid = oid
 
     @property
+    def info(self):
+
+        return self.system.oid_map.get(
+            self.oid
+        )
+
+    @property
     def unique_id(self):
 
         return self.oid
 
     @property
-    def name(self):
+    def device_info(self):
 
-        info = self.system.oid_map.get(
-            self.oid
+        if self.info is None:
+            return None
+
+        module = self.info["module"]
+
+        return DeviceInfo(
+            identifiers={
+                (
+                    DOMAIN,
+                    f"module_{module.id}",
+                )
+            },
+            manufacturer="Windhager",
+            model="InfoWIN",
+            name=module.name,
         )
 
-        if info is None:
+    @property
+    def name(self):
+
+        if self.info is None:
             return self.oid
 
-        lookup = info["lookup"]
-        entry = info["entry"]
+        lookup = self.info["lookup"]
+        entry = self.info["entry"]
 
-        return f"{lookup.name} | {entry.name}"
+        parts = []
+
+        if lookup.name:
+            parts.append(
+                lookup.name
+            )
+        else:
+            parts.append(
+                f"Gruppe {entry.group}"
+            )
+
+        if entry.name:
+            parts.append(
+                entry.name
+            )
+        else:
+            parts.append(
+                f"Member {entry.member}"
+            )
+
+        return " | ".join(parts)
+
+    @property
+    def entity_category(self):
+
+        if self.info is None:
+            return None
+
+        lookup = self.info["lookup"]
+
+        if lookup.name in DIAGNOSTIC_LOOKUPS:
+            return EntityCategory.DIAGNOSTIC
+
+        return None
+
+    @property
+    def device_class(self):
+
+        unit = self.native_unit_of_measurement
+
+        if unit is None:
+            return None
+
+        return DEVICE_CLASSES.get(unit)
 
     @property
     def native_value(self):
@@ -92,6 +166,34 @@ class WindhagerSensor(
     @property
     def native_unit_of_measurement(self):
 
-        return self.coordinator.data[
-            self.oid
-        ].unit
+        value = self.native_value
+
+        try:
+
+            float(
+                str(value).replace(
+                    ",",
+                    ".",
+                )
+            )
+
+            return self.coordinator.data[
+                self.oid
+            ].unit
+
+        except Exception:
+
+            return None
+
+    @property
+    def suggested_display_precision(self):
+
+        unit = self.native_unit_of_measurement
+
+        if unit == "°C":
+            return 1
+
+        if unit == "%":
+            return 0
+
+        return None
