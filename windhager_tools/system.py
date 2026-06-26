@@ -10,15 +10,22 @@ from windhager_tools.poller import Poller
 
 class WindhagerSystem:
 
-    def __init__(self, client):
+    def __init__(
+        self,
+        client,
+        catalog_path="catalog.json",
+    ):
 
         self.client = client
+        self.catalog_path = Path(catalog_path)
 
-        if Path("catalog.json").exists():
+        if self.catalog_path.exists():
 
             print("Lade Katalog...")
 
-            self.modules = load_catalog()
+            self.modules = load_catalog(
+                self.catalog_path
+            )
 
         else:
 
@@ -26,11 +33,14 @@ class WindhagerSystem:
 
             self.modules = crawl(client)
 
-            save_catalog(self.modules)
+            save_catalog(
+                self.modules,
+                self.catalog_path,
+            )
 
         self.poller = Poller(
             client,
-            self.modules
+            self.modules,
         )
 
     def poll(self):

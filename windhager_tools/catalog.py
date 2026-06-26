@@ -1,5 +1,6 @@
 import json
 from dataclasses import asdict
+from pathlib import Path
 
 from windhager_tools.models import (
     Module,
@@ -10,21 +11,36 @@ from windhager_tools.models import (
 )
 
 
-def save_catalog(modules, filename="catalog.json"):
+def save_catalog(modules, filename):
 
-    with open(filename, "w", encoding="utf-8") as f:
+    filename = Path(filename)
+
+    filename.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with filename.open(
+        "w",
+        encoding="utf-8",
+    ) as f:
 
         json.dump(
             [asdict(module) for module in modules],
             f,
             indent=2,
-            ensure_ascii=False
+            ensure_ascii=False,
         )
 
 
-def load_catalog(filename="catalog.json"):
+def load_catalog(filename):
 
-    with open(filename, "r", encoding="utf-8") as f:
+    filename = Path(filename)
+
+    with filename.open(
+        "r",
+        encoding="utf-8",
+    ) as f:
 
         data = json.load(f)
 
