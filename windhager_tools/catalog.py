@@ -71,6 +71,10 @@ def load_catalog(filename):
                 lookup = Lookup(
                     id=lookup_data["id"],
                     count=lookup_data["count"],
+                    name=lookup_data.get(
+                        "name",
+                        "",
+                    ),
                 )
 
                 for entry_data in lookup_data["entries"]:
@@ -83,6 +87,9 @@ def load_catalog(filename):
                             unit=entry_data["unit"],
                             type_id=entry_data["type_id"],
                             write_protected=entry_data["write_protected"],
+                            group=entry_data.get("group"),
+                            member=entry_data.get("member"),
+                            name=entry_data.get("name", ""),
                         )
 
                     else:

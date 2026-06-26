@@ -3,20 +3,28 @@ from config import HOST, USER, PASSWORD
 from windhager_tools.client import WindhagerClient
 from windhager_tools.system import WindhagerSystem
 
+print("1")
+
 client = WindhagerClient(
     HOST,
     USER,
     PASSWORD,
 )
 
+print("2")
+
 system = WindhagerSystem(client)
+
+print("3")
 
 system.initialize()
 
-for oid, info in system.oid_map.items():
+print("4")
 
-    module = info["module"].name
-    lookup = info["lookup"].name
-    entry = info["entry"].name
+print(len(system.oid_map))
 
-    print(f"{module} | {lookup} | {entry}")
+print("5")
+
+print(system.oid_map.get("/1/15/0/0/1/0"))
+
+print("6")

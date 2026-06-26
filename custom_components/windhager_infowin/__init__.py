@@ -21,7 +21,12 @@ async def async_setup_entry(
         entry.data["password"],
     )
 
-    system = WindhagerSystem(client)
+    system = WindhagerSystem(
+        client,
+        hass.config.path(
+            "windhager_catalog.json",
+        ),
+    )
 
     await hass.async_add_executor_job(
         system.initialize

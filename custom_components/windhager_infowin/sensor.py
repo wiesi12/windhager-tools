@@ -3,7 +3,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+import logging
+
 from .const import DOMAIN
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -14,6 +19,16 @@ async def async_setup_entry(
 
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     system = hass.data[DOMAIN][entry.entry_id]["system"]
+
+    for oid, info in list(system.oid_map.items())[:5]:
+
+        _LOGGER.warning(
+            "OID=%s MODULE=%r LOOKUP=%r ENTRY=%r",
+            oid,
+            info["module"].name,
+            info["lookup"].name,
+            info["entry"].name,
+        )
 
     entities = []
 
@@ -55,22 +70,28 @@ class WindhagerSensor(
     @property
     def name(self):
 
-        info = self.system.oid_map.get(self.oid)
+        info = self.system.oid_map.get(
+            self.oid
+        )
 
         if info is None:
             return self.oid
 
-        module = info["module"]
-        function = info["function"]
+        lookup = info["lookup"]
+        entry = info["entry"]
 
-        return f"{module.name} - {function.name}"
+        return f"{lookup.name} | {entry.name}"
 
     @property
     def native_value(self):
 
-        return self.coordinator.data[self.oid].value
+        return self.coordinator.data[
+            self.oid
+        ].value
 
     @property
     def native_unit_of_measurement(self):
 
-        return self.coordinator.data[self.oid].unit
+        return self.coordinator.data[
+            self.oid
+        ].unit

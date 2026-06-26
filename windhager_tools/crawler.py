@@ -4,9 +4,16 @@ from windhager_tools.discovery import (
     discover_lookups,
 )
 from windhager_tools.reader import read_lookup
+from windhager_tools.resources import (
+    ResourceDatabase,
+)
 
 
 def crawl(client):
+
+    resources = ResourceDatabase()
+
+    resources.load(client)
 
     modules = discover_modules(client)
 
@@ -16,15 +23,33 @@ def crawl(client):
 
         for function in module.functions:
 
-            discover_lookups(client, module, function)
+            discover_lookups(
+                client,
+                module,
+                function,
+            )
 
             for lookup in function.lookups:
+
+                lookup.name = resources.level_name(
+                    function.type,
+                    lookup.id,
+                ) or ""
 
                 lookup.entries = read_lookup(
                     client,
                     module,
                     function,
-                    lookup
+                    lookup,
                 )
+
+                for entry in lookup.entries:
+
+                    if hasattr(entry, "group"):
+
+                        entry.name = resources.variable_name(
+                            entry.group,
+                            entry.member,
+                        ) or ""
 
     return modules

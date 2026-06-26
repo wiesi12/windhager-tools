@@ -30,6 +30,7 @@ class Lookup:
 
     id: int
     count: int
+    name: str = ""
 
     entries: list = field(default_factory=list)
 
@@ -38,10 +39,15 @@ class Lookup:
 class Entry:
 
     oid: str
-    value: object | None
-    unit: str | None
-    type_id: int | None
-    write_protected: bool | None
+    value: str
+    unit: str
+    type_id: int
+    write_protected: bool
+
+    group: int | None = None
+    member: int | None = None
+
+    name: str = ""
 
 
 @dataclass

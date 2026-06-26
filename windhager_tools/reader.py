@@ -19,7 +19,9 @@ def read_lookup(client, module, function, lookup):
                     value=item.get("value"),
                     unit=item.get("unit"),
                     type_id=item.get("typeId"),
-                    write_protected=item.get("writeProt")
+                    write_protected=item.get("writeProt"),
+                    group=item.get("groupNr"),
+                    member=item.get("memberNr"),
                 )
             )
 

@@ -16,7 +16,10 @@ def main():
     print("Verbunden.\n")
 
     modules = crawl(client)
-    save_catalog(modules)
+    save_catalog(
+        modules,
+        "catalog.json",
+    )
     for module in modules:
 
         print(f"[{module.id}] {module.name}")

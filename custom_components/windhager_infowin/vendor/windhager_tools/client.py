@@ -37,3 +37,17 @@ class WindhagerClient:
     def lookup(self, path):
 
         return self.get(f"lookup/{path}")
+
+    def resource(self, path):
+
+        url = f"http://{self.host}/res/{path}"
+
+        response = requests.get(
+            url,
+            auth=self.auth,
+            timeout=self.timeout,
+        )
+
+        response.raise_for_status()
+
+        return response.text

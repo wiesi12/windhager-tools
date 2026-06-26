@@ -1,8 +1,28 @@
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
 
-config.py
-catalog.json
-
+# Virtual Environments
 .venv/
+venv/
+
+# IDE
 .vscode/
+.idea/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Testdaten
+catalog.json
+windhager_catalog.json
+
+# Exporte
+data/cache/
+data/exports/
+
+# Home Assistant
+*.storage/
