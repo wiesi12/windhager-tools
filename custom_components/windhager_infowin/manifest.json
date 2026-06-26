@@ -1,0 +1,15 @@
+{
+    "domain": "windhager_infowin",
+    "name": "Windhager InfoWIN",
+    "version": "0.0.1",
+    "documentation": "https://github.com/wiesi12/windhager-tools",
+    "requirements": [],
+    "codeowners": [
+        "@wiesi12"
+    ],
+    "config_flow": true,
+    "iot_class": "local_polling",
+    "loggers": [
+        "windhager_tools"
+    ]
+}

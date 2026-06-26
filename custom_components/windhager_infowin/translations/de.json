@@ -1,0 +1,15 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Windhager",
+                "description": "Verbindung zur Windhager-Heizung herstellen.",
+                "data": {
+                    "host": "Host",
+                    "username": "Benutzername",
+                    "password": "Passwort"
+                }
+            }
+        }
+    }
+}
