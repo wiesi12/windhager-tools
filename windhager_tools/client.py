@@ -4,12 +4,20 @@ from requests.auth import HTTPDigestAuth
 
 class WindhagerClient:
 
-    def __init__(self, host, username, password):
+    def __init__(
+        self,
+        host,
+        username,
+        password,
+        timeout=10,
+    ):
 
         self.host = host.rstrip("/")
+        self.timeout = timeout
+
         self.auth = HTTPDigestAuth(
             username,
-            password
+            password,
         )
 
     def get(self, path):
@@ -19,7 +27,7 @@ class WindhagerClient:
         response = requests.get(
             url,
             auth=self.auth,
-            timeout=10
+            timeout=self.timeout,
         )
 
         response.raise_for_status()
