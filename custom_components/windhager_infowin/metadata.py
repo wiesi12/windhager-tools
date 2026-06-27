@@ -18,6 +18,8 @@ DEVICE_CLASSES = {
     "kW": SensorDeviceClass.POWER,
     "Wh": SensorDeviceClass.ENERGY,
     "kWh": SensorDeviceClass.ENERGY,
+    "kg": SensorDeviceClass.WEIGHT,
+    "Std": SensorDeviceClass.DURATION,
 }
 
 
@@ -55,6 +57,15 @@ def classify(entry, lookup=None):
     if unit == "min":
         return "duration"
 
+    if unit == "Std":
+        return "duration"
+
+    if unit == "kg":
+        return "weight"
+
+    if unit == "rpm":
+        return "frequency"
+
     if unit == "d":
         return "days"
 
@@ -64,7 +75,9 @@ def classify(entry, lookup=None):
     if unit == "21":
         return "time"
 
-    if entry.write_protected:
+    # NvEntry hat kein write_protected-Attribut (NV's sind grundsaetzlich
+    # nur lesbare Mess-/Statuswerte, daher "sensor" als Default).
+    if getattr(entry, "write_protected", True):
         return "sensor"
 
     return "setting"
@@ -107,8 +120,10 @@ def has_numeric_value(entry):
 
         return True
 
-    except Exception:
+    except (ValueError, TypeError):
 
+        # z.B. NV-Werte, die noch nicht gepollt wurden ("-"),
+        # oder nicht-numerische Statuswerte.
         return False
 
 
@@ -128,6 +143,7 @@ def icon(entry, lookup=None):
         "date": "mdi:calendar",
         "time": "mdi:clock-outline",
         "percentage": "mdi:percent",
+        "weight": "mdi:weight-kilogram",
         "diagnostic": "mdi:information-outline",
         "setting": "mdi:cog-outline",
         "sensor": "mdi:chart-line",

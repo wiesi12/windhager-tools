@@ -76,6 +76,23 @@ class WindhagerSystem:
                                 "entry": entry,
                             }
 
+                        elif hasattr(entry, "index"):
+
+                            # NvEntry hat kein oid, sondern einen pro-
+                            # Modul eindeutigen index. Daraus einen
+                            # eindeutigen, stabilen Schluessel bauen,
+                            # damit NV-Eintraege wie normale OID-
+                            # Eintraege als Sensor behandelt werden
+                            # koennen.
+                            nv_key = f"nv:{module.id}:{entry.index}"
+
+                            self.oid_map[nv_key] = {
+                                "module": module,
+                                "function": function,
+                                "lookup": lookup,
+                                "entry": entry,
+                            }
+
     def statistics(self):
 
         modules = len(self.modules)
