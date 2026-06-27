@@ -84,11 +84,25 @@ def load_catalog(filename):
                         entry = Entry(
                             oid=entry_data["oid"],
                             value=entry_data["value"],
-                            unit=entry_data["unit"],
-                            type_id=entry_data["type_id"],
+                            unit=entry_data.get("unit"),
+                            unit_id=entry_data.get("unit_id"),
+
+                            type_id=entry_data.get("type_id"),
+                            subtype_id=entry_data.get("subtype_id"),
+
                             write_protected=entry_data["write_protected"],
+
                             group=entry_data.get("group"),
                             member=entry_data.get("member"),
+
+                            min_value=entry_data.get("min_value"),
+                            max_value=entry_data.get("max_value"),
+
+                            step=entry_data.get("step"),
+                            step_id=entry_data.get("step_id"),
+
+                            timestamp=entry_data.get("timestamp"),
+
                             name=entry_data.get("name", ""),
                         )
 
@@ -97,10 +111,10 @@ def load_catalog(filename):
                         entry = NvEntry(
                             index=entry_data["index"],
                             name=entry_data["name"],
-                            snvt_name=entry_data["snvt_name"],
-                            snvt_index=entry_data["snvt_index"],
-                            value=entry_data["value"],
-                            unit=entry_data["unit"],
+                            snvt_name=entry_data.get("snvt_name"),
+                            snvt_index=entry_data.get("snvt_index"),
+                            value=entry_data.get("value"),
+                            unit=entry_data.get("unit"),
                         )
 
                     lookup.entries.append(entry)
