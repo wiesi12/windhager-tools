@@ -1,29 +1,41 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyc
+*$py.class
 
-# Virtual Environments
-.venv/
-venv/
+# Compiled extensions
+*.so
+*.pyd
 
-# IDE
-.vscode/
-.idea/
-
-# Build
+# Distribution / packaging
 build/
 dist/
 *.egg-info/
+.eggs/
 
-# Testdaten
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local configuration
+config.py
 catalog.json
-windhager_catalog.json
 
-# Exporte
-data/cache/
-data/exports/
-
-# Home Assistant
-*.storage/
+# Logs
+*.log
