@@ -16,12 +16,29 @@ def read_lookup(client, module, function, lookup):
             entries.append(
                 Entry(
                     oid=item["OID"],
+
                     value=item.get("value"),
+
                     unit=item.get("unit"),
+                    unit_id=item.get("unitId"),
+
                     type_id=item.get("typeId"),
-                    write_protected=item.get("writeProt"),
+                    subtype_id=item.get("subtypeId"),
+
                     group=item.get("groupNr"),
                     member=item.get("memberNr"),
+
+                    min_value=item.get("minValue"),
+                    max_value=item.get("maxValue"),
+
+                    step=item.get("step"),
+                    step_id=item.get("stepId"),
+
+                    timestamp=item.get("timestamp"),
+
+                    write_protected=item.get("writeProt"),
+
+                    name="",
                 )
             )
 
@@ -34,7 +51,7 @@ def read_lookup(client, module, function, lookup):
                     snvt_name=item.get("snvtName"),
                     snvt_index=item.get("snvtIndex"),
                     value=item.get("value"),
-                    unit=item.get("unit")
+                    unit=item.get("unit"),
                 )
             )
 

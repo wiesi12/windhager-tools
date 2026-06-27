@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -39,15 +40,35 @@ class Lookup:
 class Entry:
 
     oid: str
-    value: str
-    unit: str
-    type_id: int
+
+    value: Any
+
+    unit: str | None
+
+    type_id: int | None
+
     write_protected: bool
 
     group: int | None = None
     member: int | None = None
 
+    unit_id: int | None = None
+    subtype_id: int | None = None
+
+    min_value: str | None = None
+    max_value: str | None = None
+
+    step: str | None = None
+    step_id: int | None = None
+
+    timestamp: str | None = None
+
     name: str = ""
+
+    @property
+    def writable(self):
+
+        return not self.write_protected
 
 
 @dataclass
