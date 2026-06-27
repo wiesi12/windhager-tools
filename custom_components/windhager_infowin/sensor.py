@@ -72,6 +72,17 @@ class WindhagerSensor(
         return self.info["lookup"]
 
     @property
+    def meta(self):
+
+        if self.entry is None:
+            return {}
+
+        return metadata.metadata(
+            self.entry,
+            self.lookup,
+        )
+
+    @property
     def unique_id(self):
 
         return self.oid
@@ -127,21 +138,22 @@ class WindhagerSensor(
     @property
     def entity_category(self):
 
-        if self.lookup is None:
-            return None
-
-        return metadata.entity_category(
-            self.lookup
+        return self.meta.get(
+            "entity_category"
         )
 
     @property
     def device_class(self):
 
-        if self.entry is None:
-            return None
+        return self.meta.get(
+            "device_class"
+        )
 
-        return metadata.device_class(
-            self.entry
+    @property
+    def icon(self):
+
+        return self.meta.get(
+            "icon"
         )
 
     @property
@@ -154,11 +166,9 @@ class WindhagerSensor(
     @property
     def native_unit_of_measurement(self):
 
-        if self.entry is None:
-            return None
-
-        if not metadata.has_numeric_value(
-            self.entry
+        if not self.meta.get(
+            "numeric",
+            False,
         ):
             return None
 
@@ -167,9 +177,6 @@ class WindhagerSensor(
     @property
     def suggested_display_precision(self):
 
-        if self.entry is None:
-            return None
-
-        return metadata.suggested_precision(
-            self.entry
+        return self.meta.get(
+            "precision"
         )
