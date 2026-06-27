@@ -5,13 +5,13 @@ from .discovery import (
 )
 from .reader import read_lookup
 from .resources import (
-    ResourceDatabase,
+    Resources,
 )
 
 
 def crawl(client):
 
-    resources = ResourceDatabase()
+    resources = Resources()
 
     resources.load(client)
 
@@ -19,7 +19,10 @@ def crawl(client):
 
     for module in modules:
 
-        discover_functions(client, module)
+        discover_functions(
+            client,
+            module,
+        )
 
         for function in module.functions:
 
@@ -31,10 +34,12 @@ def crawl(client):
 
             for lookup in function.lookups:
 
-                lookup.name = resources.level_name(
-                    function.type,
-                    lookup.id,
-                ) or ""
+                lookup.name = (
+                    resources.lookup_name(
+                        lookup.id,
+                    )
+                    or ""
+                )
 
                 lookup.entries = read_lookup(
                     client,
@@ -45,11 +50,17 @@ def crawl(client):
 
                 for entry in lookup.entries:
 
-                    if hasattr(entry, "group"):
+                    if hasattr(
+                        entry,
+                        "group",
+                    ):
 
-                        entry.name = resources.variable_name(
-                            entry.group,
-                            entry.member,
-                        ) or ""
+                        entry.name = (
+                            resources.entry_name(
+                                entry.group,
+                                entry.member,
+                            )
+                            or ""
+                        )
 
     return modules

@@ -1,19 +1,19 @@
 from xml.etree import ElementTree
 
 
-class ResourceDatabase:
+class Resources:
 
     def __init__(self):
 
-        self.levels = {}
-        self.variables = {}
+        self.lookup_names = {}
+        self.entry_names = {}
 
     def load(self, client):
 
-        self._load_levels(client)
-        self._load_variables(client)
+        self._load_lookup_names(client)
+        self._load_entry_names(client)
 
-    def _load_levels(self, client):
+    def _load_lookup_names(self, client):
 
         xml = client.resource(
             "xml/EbenenTexte_de.xml"
@@ -23,28 +23,17 @@ class ResourceDatabase:
 
         for function in root.findall("fcttyp"):
 
-            function_type = int(
-                function.attrib["id"]
-            )
+            for lookup in function.findall("ebene"):
 
-            self.levels.setdefault(
-                function_type,
-                {},
-            )
-
-            for level in function.findall("ebene"):
-
-                level_id = int(
-                    level.attrib["id"]
+                lookup_id = int(
+                    lookup.attrib["id"]
                 )
 
-                self.levels[
-                    function_type
-                ][
-                    level_id
-                ] = level.text
+                self.lookup_names[
+                    lookup_id
+                ] = lookup.text or ""
 
-    def _load_variables(self, client):
+    def _load_entry_names(self, client):
 
         xml = client.resource(
             "xml/VarIdentTexte_de.xml"
@@ -58,41 +47,37 @@ class ResourceDatabase:
                 group.attrib["id"]
             )
 
-            self.variables.setdefault(
-                group_id,
-                {},
-            )
-
             for member in group.findall("mn"):
 
                 member_id = int(
                     member.attrib["id"]
                 )
 
-                self.variables[
-                    group_id
-                ][
-                    member_id
-                ] = member.text
+                self.entry_names[
+                    (
+                        group_id,
+                        member_id,
+                    )
+                ] = member.text or ""
 
-    def level_name(
+    def lookup_name(
         self,
-        function_type,
-        level_id,
+        lookup_id,
     ):
 
-        return self.levels.get(
-            function_type,
-            {},
-        ).get(level_id)
+        return self.lookup_names.get(
+            lookup_id
+        )
 
-    def variable_name(
+    def entry_name(
         self,
         group_id,
         member_id,
     ):
 
-        return self.variables.get(
-            group_id,
-            {},
-        ).get(member_id)
+        return self.entry_names.get(
+            (
+                group_id,
+                member_id,
+            )
+        )
