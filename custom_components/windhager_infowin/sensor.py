@@ -1,33 +1,11 @@
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorDeviceClass,
-)
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-
-
-DIAGNOSTIC_LOOKUPS = {
-    "Modulinfo",
-}
-
-
-DEVICE_CLASSES = {
-    "°C": SensorDeviceClass.TEMPERATURE,
-    "K": SensorDeviceClass.TEMPERATURE,
-    "bar": SensorDeviceClass.PRESSURE,
-    "V": SensorDeviceClass.VOLTAGE,
-    "A": SensorDeviceClass.CURRENT,
-    "Hz": SensorDeviceClass.FREQUENCY,
-    "W": SensorDeviceClass.POWER,
-    "kW": SensorDeviceClass.POWER,
-    "Wh": SensorDeviceClass.ENERGY,
-    "kWh": SensorDeviceClass.ENERGY,
-}
+from . import metadata
 
 
 async def async_setup_entry(
@@ -78,6 +56,22 @@ class WindhagerSensor(
         )
 
     @property
+    def entry(self):
+
+        if self.info is None:
+            return None
+
+        return self.info["entry"]
+
+    @property
+    def lookup(self):
+
+        if self.info is None:
+            return None
+
+        return self.info["lookup"]
+
+    @property
     def unique_id(self):
 
         return self.oid
@@ -108,27 +102,24 @@ class WindhagerSensor(
         if self.info is None:
             return self.oid
 
-        lookup = self.info["lookup"]
-        entry = self.info["entry"]
-
         parts = []
 
-        if lookup.name:
+        if self.lookup.name:
             parts.append(
-                lookup.name
+                self.lookup.name
             )
         else:
             parts.append(
-                f"Gruppe {entry.group}"
+                f"Gruppe {self.entry.group}"
             )
 
-        if entry.name:
+        if self.entry.name:
             parts.append(
-                entry.name
+                self.entry.name
             )
         else:
             parts.append(
-                f"Member {entry.member}"
+                f"Member {self.entry.member}"
             )
 
         return " | ".join(parts)
@@ -136,25 +127,22 @@ class WindhagerSensor(
     @property
     def entity_category(self):
 
-        if self.info is None:
+        if self.lookup is None:
             return None
 
-        lookup = self.info["lookup"]
-
-        if lookup.name in DIAGNOSTIC_LOOKUPS:
-            return EntityCategory.DIAGNOSTIC
-
-        return None
+        return metadata.entity_category(
+            self.lookup
+        )
 
     @property
     def device_class(self):
 
-        unit = self.native_unit_of_measurement
-
-        if unit is None:
+        if self.entry is None:
             return None
 
-        return DEVICE_CLASSES.get(unit)
+        return metadata.device_class(
+            self.entry
+        )
 
     @property
     def native_value(self):
@@ -166,34 +154,22 @@ class WindhagerSensor(
     @property
     def native_unit_of_measurement(self):
 
-        value = self.native_value
-
-        try:
-
-            float(
-                str(value).replace(
-                    ",",
-                    ".",
-                )
-            )
-
-            return self.coordinator.data[
-                self.oid
-            ].unit
-
-        except Exception:
-
+        if self.entry is None:
             return None
+
+        if not metadata.has_numeric_value(
+            self.entry
+        ):
+            return None
+
+        return self.entry.unit
 
     @property
     def suggested_display_precision(self):
 
-        unit = self.native_unit_of_measurement
+        if self.entry is None:
+            return None
 
-        if unit == "°C":
-            return 1
-
-        if unit == "%":
-            return 0
-
-        return None
+        return metadata.suggested_precision(
+            self.entry
+        )
