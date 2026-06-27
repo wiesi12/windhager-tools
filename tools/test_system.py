@@ -9,14 +9,20 @@ def main():
     client = WindhagerClient(
         HOST,
         USER,
-        PASSWORD
+        PASSWORD,
     )
 
     system = WindhagerSystem(client)
 
-    values = system.poll()
+    system.initialize()
+
+    system.validate()
 
     print()
+    print("=== SAMPLE VALUES ===")
+    print()
+
+    values = system.poll()
 
     print(f"{len(values)} OIDs\n")
 

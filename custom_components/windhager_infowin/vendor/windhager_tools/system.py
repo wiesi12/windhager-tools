@@ -1,3 +1,4 @@
+from collections import Counter
 from pathlib import Path
 
 from .catalog import (
@@ -74,6 +75,90 @@ class WindhagerSystem:
                                 "lookup": lookup,
                                 "entry": entry,
                             }
+
+    def statistics(self):
+
+        modules = len(self.modules)
+
+        functions = 0
+        lookups = 0
+        entries = 0
+
+        for module in self.modules:
+
+            functions += len(module.functions)
+
+            for function in module.functions:
+
+                lookups += len(function.lookups)
+
+                for lookup in function.lookups:
+
+                    entries += len(lookup.entries)
+
+        return {
+            "modules": modules,
+            "functions": functions,
+            "lookups": lookups,
+            "entries": entries,
+        }
+
+    def validate(self):
+
+        stats = self.statistics()
+
+        duplicate_oids = 0
+        unnamed_lookups = 0
+        unnamed_entries = 0
+
+        oids = Counter()
+
+        for module in self.modules:
+
+            for function in module.functions:
+
+                for lookup in function.lookups:
+
+                    if not lookup.name:
+
+                        unnamed_lookups += 1
+
+                    for entry in lookup.entries:
+
+                        if hasattr(entry, "oid"):
+
+                            oids[entry.oid] += 1
+
+                            if not entry.name:
+
+                                unnamed_entries += 1
+
+        duplicate_oids = sum(
+            1
+            for count in oids.values()
+            if count > 1
+        )
+
+        print()
+
+        print("=== CATALOG ===")
+        print(f"Modules:   {stats['modules']}")
+        print(f"Functions: {stats['functions']}")
+        print(f"Lookups:   {stats['lookups']}")
+        print(f"Entries:   {stats['entries']}")
+
+        print()
+
+        print("=== VALIDATION ===")
+        print(
+            f"Duplicate OIDs: {duplicate_oids}"
+        )
+        print(
+            f"Lookups without name: {unnamed_lookups}"
+        )
+        print(
+            f"Entries without name: {unnamed_entries}"
+        )
 
     def poll(self):
 
