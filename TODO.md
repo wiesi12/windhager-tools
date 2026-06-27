@@ -84,6 +84,7 @@
 
 ## Future
 
+- [ ] Generate readable default entity IDs
 - [ ] Write support
 - [ ] Localization
 - [ ] Unit tests
