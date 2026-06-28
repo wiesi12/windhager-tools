@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -15,6 +17,17 @@ from .coordinator import (
     WindhagerCoordinator,
     WindhagerNvCoordinator,
 )
+
+
+# Unterordner INNERHALB der Integration selbst (nicht im HA-Config-
+# Root) fuer den zwischengespeicherten Discovery-Katalog. Der Vorteil
+# gegenueber hass.config.path(): wird der gesamte Integrations-Ordner
+# entfernt (z.B. durch HACS-Deinstallation), verschwindet der Katalog
+# automatisch mit - es bleiben keine verwaisten Dateien im HA-Config-
+# Verzeichnis zurueck. In hacs.json als "persistent_directory"
+# deklariert, damit HACS diesen Ordner bei Updates nicht versehentlich
+# loescht/ueberschreibt.
+DATA_DIR = Path(__file__).parent / "data"
 
 
 def _resolve_language(hass: HomeAssistant) -> str:
@@ -53,16 +66,30 @@ async def async_setup_entry(
 
     language = _resolve_language(hass)
 
-    system = WindhagerSystem(
-        client,
-        # Sprache im Dateinamen, damit ein spaeterer Wechsel der HA-
-        # Systemsprache automatisch einen frischen Discovery-Crawl
-        # in der neuen Sprache ausloest, statt den alten Katalog der
-        # vorherigen Sprache weiterzuverwenden.
-        hass.config.path(
-            f"windhager_catalog_{language}.json",
-        ),
-        language=language,
+    def _build_system():
+
+        # DATA_DIR.mkdir() ist blockierendes Dateisystem-I/O und
+        # gehoert daher in den executor job, nicht in den Event-Loop.
+        DATA_DIR.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        return WindhagerSystem(
+            client,
+            # Sprache im Dateinamen, damit ein spaeterer Wechsel der
+            # HA-Systemsprache automatisch einen frischen Discovery-
+            # Crawl in der neuen Sprache ausloest, statt den alten
+            # Katalog der vorherigen Sprache weiterzuverwenden.
+            str(
+                DATA_DIR
+                / f"catalog_{language}.json"
+            ),
+            language=language,
+        )
+
+    system = await hass.async_add_executor_job(
+        _build_system
     )
 
     await hass.async_add_executor_job(

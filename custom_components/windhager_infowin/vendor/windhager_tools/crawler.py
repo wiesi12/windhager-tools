@@ -37,6 +37,7 @@ def crawl(client, language=DEFAULT_LANGUAGE):
 
                 lookup.name = (
                     resources.lookup_name(
+                        function.type,
                         lookup.id,
                     )
                     or ""

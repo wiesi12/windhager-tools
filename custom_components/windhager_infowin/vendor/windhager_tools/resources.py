@@ -39,6 +39,19 @@ class Resources:
         self._load_entry_names(client)
 
     def _load_lookup_names(self, client):
+        """EbenenTexte_<lang>.xml laden.
+
+        WICHTIG: Die "ebene id" (Lookup-ID) ist NUR innerhalb eines
+        "fcttyp" (Function-Typ) eindeutig, nicht global! Windhager
+        vergibt z.B. "ebene id=100" sowohl unter fcttyp 14
+        ("Ferienprogramm") als auch unter fcttyp 20
+        ("Summenstörmeldung") - voellig unterschiedliche Bedeutung.
+        Ein rein nach lookup_id indiziertes Dict wuerde bei solchen
+        Kollisionen den falschen Namen liefern (je nachdem welcher
+        fcttyp zuletzt in der XML-Datei vorkommt). Deshalb wird hier
+        nach (fcttyp_id, lookup_id) geschluesselt; lookup_name()
+        braucht entsprechend die function_type als Parameter.
+        """
 
         xml = client.resource(
             f"xml/EbenenTexte_{self.language}.xml"
@@ -48,6 +61,10 @@ class Resources:
 
         for function in root.findall("fcttyp"):
 
+            function_type = int(
+                function.attrib["id"]
+            )
+
             for lookup in function.findall("ebene"):
 
                 lookup_id = int(
@@ -55,7 +72,10 @@ class Resources:
                 )
 
                 self.lookup_names[
-                    lookup_id
+                    (
+                        function_type,
+                        lookup_id,
+                    )
                 ] = lookup.text or ""
 
     def _load_entry_names(self, client):
@@ -87,11 +107,15 @@ class Resources:
 
     def lookup_name(
         self,
+        function_type,
         lookup_id,
     ):
 
         return self.lookup_names.get(
-            lookup_id
+            (
+                function_type,
+                lookup_id,
+            )
         )
 
     def entry_name(

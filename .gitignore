@@ -39,3 +39,5 @@ catalog.json
 
 # Logs
 *.log
+
+custom_components/windhager_infowin/data/*.json
