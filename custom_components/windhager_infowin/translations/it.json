@@ -1,0 +1,15 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Windhager",
+                "description": "Connessione al sistema di riscaldamento Windhager.",
+                "data": {
+                    "host": "Host",
+                    "username": "Nome utente",
+                    "password": "Password"
+                }
+            }
+        }
+    }
+}

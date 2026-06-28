@@ -1,0 +1,11 @@
+# Vorlage fuer eigene Debug-/Entwicklungsskripte gegen die
+# windhager_tools-Library (NICHT fuer die Home-Assistant-Integration
+# selbst noetig - die nutzt die Zugangsdaten aus dem Config-Flow).
+#
+# Diese Datei zu "config.py" kopieren und mit den echten Werten
+# deiner Anlage befuellen. config.py ist in .gitignore eingetragen
+# und wird daher nicht versehentlich committet.
+
+HOST = "192.168.1.100"
+USER = "USER"
+PASSWORD = "123"
