@@ -1,0 +1,21 @@
+# Zeilenenden im Repository einheitlich auf LF normalisieren,
+# unabhaengig vom Betriebssystem/Editor des jeweiligen Entwicklers
+# (verhindert grosse Diffs, die nur aus CRLF<->LF Aenderungen
+# bestehen).
+
+* text=auto eol=lf
+
+*.py text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.txt text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Binaerdateien explizit ausschliessen, falls jemals welche
+# hinzukommen (Icons, Zertifikate etc.)
+*.png binary
+*.jpg binary
+*.ico binary

@@ -184,3 +184,11 @@ class WindhagerSystem:
             self.initialize()
 
         return self.poller.poll()
+
+    def poll_nv(self):
+
+        if self.poller is None:
+
+            self.initialize()
+
+        return self.poller.poll_nv()

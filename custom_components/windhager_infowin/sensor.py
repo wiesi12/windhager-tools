@@ -17,11 +17,17 @@ async def async_setup_entry(
 ):
 
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    nv_coordinator = hass.data[DOMAIN][entry.entry_id]["nv_coordinator"]
     system = hass.data[DOMAIN][entry.entry_id]["system"]
 
     entities = [
         WindhagerSensor(
-            coordinator,
+            # NV-Entities (Schluessel "nv:...") werden beim
+            # nv_coordinator registriert, damit sie bei dessen
+            # selteneren Updates (Standard: alle 10 Minuten) neu
+            # geschrieben werden. Alle anderen (normale OID-Sensoren)
+            # bleiben am haeufigen 30s-coordinator.
+            nv_coordinator if oid.startswith("nv:") else coordinator,
             system,
             oid,
         )
@@ -79,9 +85,23 @@ class WindhagerSensor(
         if self.entry is None:
             return {}
 
+        # WICHTIG: self.entry kommt aus dem statischen Katalog
+        # (system.oid_map) und enthaelt bei NV's immer den
+        # Platzhalterwert "-" aus der Discovery-Phase, NICHT den
+        # aktuellen Live-Wert. metadata.metadata() entscheidet aber
+        # u.a. anhand des Werts, ob der Sensor numerisch ist (siehe
+        # has_numeric_value). Deshalb hier den aktuellen Live-Wert aus
+        # dem Coordinator einsetzen, bevor die Metadaten berechnet
+        # werden - sonst bleiben device_class/unit/precision dauerhaft
+        # auf Basis des veralteten Katalog-Platzhalters falsch gesetzt.
+        live_value = self.coordinator.data[
+            self.oid
+        ].value
+
         return metadata.metadata(
             self.entry,
             self.lookup,
+            live_value,
         )
 
     @property
@@ -174,6 +194,17 @@ class WindhagerSensor(
     @property
     def device_class(self):
 
+        # Gleicher Schutz wie bei native_unit_of_measurement/
+        # suggested_display_precision: eine device_class signalisiert
+        # HA "dieser Sensor hat einen numerischen Wert in dieser
+        # Einheit". Liefert die Heizung (noch) einen Platzhalter wie
+        # "-" statt einer Zahl, darf hier nichts gesetzt werden.
+        if not self.meta.get(
+            "numeric",
+            False,
+        ):
+            return None
+
         return self.meta.get(
             "device_class"
         )
@@ -201,10 +232,33 @@ class WindhagerSensor(
         ):
             return None
 
+        # Bevorzugt die Einheit aus dem aktuellen Live-Wert (falls
+        # vorhanden), da self.entry.unit der statische Katalog-Wert
+        # ist. In der Praxis aendert sich die Einheit einer Variable
+        # nicht zur Laufzeit, aber so bleibt es konsistent mit der
+        # live_value-Logik in self.meta.
+        live_entry = self.coordinator.data.get(
+            self.oid
+        )
+
+        if live_entry is not None and live_entry.unit:
+            return live_entry.unit
+
         return self.entry.unit
 
     @property
     def suggested_display_precision(self):
+
+        # Wie bei native_unit_of_measurement: precision darf nur
+        # gesetzt werden, wenn der Wert tatsaechlich numerisch ist.
+        # Sonst denkt HA, der Sensor sei numerisch, obwohl er (noch)
+        # einen Platzhalterwert wie "-" liefert, und stuerzt beim
+        # Schreiben des States ab.
+        if not self.meta.get(
+            "numeric",
+            False,
+        ):
+            return None
 
         return self.meta.get(
             "precision"

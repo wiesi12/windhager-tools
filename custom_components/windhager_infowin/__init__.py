@@ -7,7 +7,10 @@ from .vendor.windhager_tools import (
 )
 
 from .const import DOMAIN
-from .coordinator import WindhagerCoordinator
+from .coordinator import (
+    WindhagerCoordinator,
+    WindhagerNvCoordinator,
+)
 
 
 async def async_setup_entry(
@@ -39,11 +42,19 @@ async def async_setup_entry(
 
     await coordinator.async_config_entry_first_refresh()
 
+    nv_coordinator = WindhagerNvCoordinator(
+        hass,
+        system,
+    )
+
+    await nv_coordinator.async_config_entry_first_refresh()
+
     hass.data.setdefault(DOMAIN, {})
 
     hass.data[DOMAIN][entry.entry_id] = {
         "system": system,
         "coordinator": coordinator,
+        "nv_coordinator": nv_coordinator,
     }
 
     await hass.config_entries.async_forward_entry_setups(

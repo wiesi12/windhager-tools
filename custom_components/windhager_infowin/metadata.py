@@ -107,15 +107,21 @@ def suggested_precision(entry):
     return None
 
 
-def has_numeric_value(entry):
+def has_numeric_value(entry, live_value=None):
 
     if entry.unit is None:
         return False
 
+    # Bevorzugt den aktuellen Live-Wert pruefen, falls vorhanden -
+    # entry.value kann bei NvEntry ein veralteter Discovery-
+    # Platzhalter ("-") sein, waehrend der echte aktuelle Wert
+    # bereits numerisch ist (oder umgekehrt).
+    value = entry.value if live_value is None else live_value
+
     try:
 
         float(
-            str(entry.value).replace(",", ".")
+            str(value).replace(",", ".")
         )
 
         return True
@@ -152,7 +158,7 @@ def icon(entry, lookup=None):
     return icons.get(kind)
 
 
-def metadata(entry, lookup=None):
+def metadata(entry, lookup=None, live_value=None):
 
     return {
         "classification": classify(entry, lookup),
@@ -160,5 +166,5 @@ def metadata(entry, lookup=None):
         "entity_category": entity_category(lookup) if lookup else None,
         "precision": suggested_precision(entry),
         "icon": icon(entry, lookup),
-        "numeric": has_numeric_value(entry),
+        "numeric": has_numeric_value(entry, live_value),
     }
