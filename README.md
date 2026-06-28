@@ -63,6 +63,22 @@ als Sensoren einbindet.
    10–30 Sekunden dauern. Danach wird das Ergebnis lokal zwischengespeichert
    und beim nächsten Start nicht erneut abgefragt.
 
+### Falls du das Webserver-Passwort nicht kennst
+
+Wenn du die **Windhager-App** (myComfort o. ä.) zum Einrichten deiner
+Anlage benutzt hast, ändert diese beim Verbinden automatisch das
+Passwort des lokalen Webservers – und gibt es dir nirgends im Klartext
+heraus. In diesem Fall bleibt nur ein **Werksreset des Webservers**
+(Reset-Taste am Gerät, meist > 10 Sekunden gedrückt halten, siehe
+Anleitung deines Geräts), wodurch Benutzername/Passwort wieder auf die
+Standardwerte zurückgesetzt werden.
+
+**Wichtig:** Nach einem Werksreset funktioniert die Windhager-App in
+der Regel nicht mehr mit diesem Gerät, da deren Ersteinrichtung das
+Passwort erneut ändern würde – du kannst dann effektiv nur noch
+zwischen "App-Zugriff" und "lokalem API-Zugriff (z. B. für diese
+Integration)" wählen, nicht beides gleichzeitig nutzen.
+
 ## Kompatibilität
 
 Diese Integration wurde entwickelt und getestet mit einer Windhager-Anlage
@@ -80,13 +96,20 @@ Diese Integration wurde entwickelt und getestet mit einer Windhager-Anlage
   ist unabhängig vom Kesseltyp, solange die Steuerung MES INFINITY mit
   RC7030-Webserver ist.
 
+### Wahrscheinlich NICHT kompatibel
+
+- **Neuere Geräte/Firmware-Versionen**, bei denen der lokale Webzugriff
+  nur noch eine "comWinStack API"-Begrüßungsseite zeigt (siehe z. B.
+  [domfie/windhager-rest-api-documentation](https://github.com/domfie/windhager-rest-api-documentation)).
+  Diese API scheint einen anderen Aufbau zu haben als die hier
+  verwendete (ältere) REST-API – ein Funktionieren dieser Integration
+  damit ist **unwahrscheinlich**, ohne größere Anpassungen am Code.
+  Falls du eine solche Anlage hast und es trotzdem testen möchtest,
+  freue ich mich über eine Rückmeldung per Issue (Erfolg oder
+  Fehlschlag).
+
 ### Ungetestet / unklar
 
-- Neuere Firmware-Versionen, bei denen der lokale Webzugriff teilweise
-  nur noch eine "comWinStack API"-Begrüßungsseite zeigt (siehe z. B.
-  [domfie/windhager-rest-api-documentation](https://github.com/domfie/windhager-rest-api-documentation)),
-  könnten eine andere/erweiterte API-Schicht verwenden. Diese
-  Integration wurde gegen eine ältere Firmware (S 1.0.2, 2017) getestet.
 - Die ältere **MES PLUS**-Generation (Webserver-Modell vermutlich ebenfalls
   RC7030, aber ohne "Touch"-Bedienelement) wurde nicht eigenständig
   getestet, dürfte aber aufgrund der baugleichen Hardware ebenfalls
