@@ -64,6 +64,26 @@ class WindhagerSensor(
         )
 
     @property
+    def live_entry(self):
+        """Den aktuellen Live-Entry aus dem Coordinator sicher
+        abrufen. self.coordinator.data ist None, bis der Coordinator
+        seinen ersten Refresh abgeschlossen hat - das passiert beim
+        nv_coordinator bewusst NICHT blockierend waehrend des
+        Integrations-Setups (siehe __init__.py), daher koennen
+        Entities kurzzeitig erzeugt werden, bevor echte Daten
+        vorliegen. In dem Fall liefert diese Property None, und alle
+        anderen Properties fallen auf den statischen Katalog-Wert
+        (self.entry) zurueck.
+        """
+
+        if self.coordinator.data is None:
+            return None
+
+        return self.coordinator.data.get(
+            self.oid
+        )
+
+    @property
     def entry(self):
 
         if self.info is None:
@@ -94,9 +114,15 @@ class WindhagerSensor(
         # dem Coordinator einsetzen, bevor die Metadaten berechnet
         # werden - sonst bleiben device_class/unit/precision dauerhaft
         # auf Basis des veralteten Katalog-Platzhalters falsch gesetzt.
-        live_value = self.coordinator.data[
-            self.oid
-        ].value
+        # self.live_entry ist None, solange der Coordinator noch
+        # keinen ersten erfolgreichen Refresh hatte - dann wird
+        # einfach der statische Katalog-Wert (self.entry.value, meist
+        # "-") als live_value verwendet.
+        live_value = (
+            self.live_entry.value
+            if self.live_entry is not None
+            else self.entry.value
+        )
 
         return metadata.metadata(
             self.entry,
@@ -233,10 +259,14 @@ class WindhagerSensor(
         # metadata.parsed_value() wandelt Datum/Zeit-Strings ("20"/
         # "21" Einheit) in echte date/time-Objekte um, wie von HA fuer
         # device_class DATE/TIME gefordert. Fuer alle anderen Faelle
-        # liefert es den unveraenderten Rohwert.
-        live_value = self.coordinator.data[
-            self.oid
-        ].value
+        # liefert es den unveraenderten Rohwert. Faellt auf den
+        # statischen Katalog-Wert zurueck, solange noch kein Live-
+        # Wert vorliegt (siehe live_entry).
+        live_value = (
+            self.live_entry.value
+            if self.live_entry is not None
+            else self.entry.value
+        )
 
         return metadata.parsed_value(
             self.entry,
@@ -256,14 +286,12 @@ class WindhagerSensor(
         # vorhanden), da self.entry.unit der statische Katalog-Wert
         # ist. In der Praxis aendert sich die Einheit einer Variable
         # nicht zur Laufzeit, aber so bleibt es konsistent mit der
-        # live_value-Logik in self.meta.
-        live_entry = self.coordinator.data.get(
-            self.oid
-        )
-
+        # live_value-Logik in self.meta. self.live_entry ist None,
+        # solange noch kein erfolgreicher Coordinator-Refresh
+        # stattgefunden hat.
         raw_unit = (
-            live_entry.unit
-            if live_entry is not None and live_entry.unit
+            self.live_entry.unit
+            if self.live_entry is not None and self.live_entry.unit
             else self.entry.unit
         )
 

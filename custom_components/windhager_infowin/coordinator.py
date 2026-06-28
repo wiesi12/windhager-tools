@@ -26,11 +26,18 @@ class WindhagerCoordinator(DataUpdateCoordinator):
     ueberhaupt existieren.
     """
 
-    def __init__(self, hass, system, update_interval_minutes=5):
+    def __init__(
+        self,
+        hass,
+        config_entry,
+        system,
+        update_interval_minutes=5,
+    ):
 
         super().__init__(
             hass,
             logger=_LOGGER,
+            config_entry=config_entry,
             name=DOMAIN,
             update_interval=timedelta(
                 minutes=update_interval_minutes
@@ -54,11 +61,18 @@ class WindhagerNvCoordinator(DataUpdateCoordinator):
     30s-Poll der normalen Sensoren.
     """
 
-    def __init__(self, hass, system, update_interval_minutes=10):
+    def __init__(
+        self,
+        hass,
+        config_entry,
+        system,
+        update_interval_minutes=10,
+    ):
 
         super().__init__(
             hass,
             logger=_LOGGER,
+            config_entry=config_entry,
             name=f"{DOMAIN}_nv",
             update_interval=timedelta(
                 minutes=update_interval_minutes

@@ -1,4 +1,5 @@
 from homeassistant import config_entries
+from homeassistant.helpers import selector
 import voluptuous as vol
 
 from .const import DOMAIN
@@ -25,9 +26,24 @@ class WindhagerConfigFlow(
 
         schema = vol.Schema(
             {
-                vol.Required("host"): str,
-                vol.Required("username"): str,
-                vol.Required("password"): str,
+                vol.Required("host"): selector.TextSelector(),
+                vol.Required("username"): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        autocomplete="username",
+                    )
+                ),
+                # WICHTIG: TextSelectorType.PASSWORD sorgt dafuer,
+                # dass HA das Feld im UI als maskierte Eingabe
+                # (Punkte statt Klartext) anzeigt - ohne diesen
+                # Selector wird das Passwort sonst im Klartext
+                # eingegeben UND angezeigt (auch beim spaeteren
+                # Bearbeiten der Integration in den Einstellungen).
+                vol.Required("password"): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        type=selector.TextSelectorType.PASSWORD,
+                        autocomplete="current-password",
+                    )
+                ),
             }
         )
 
