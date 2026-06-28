@@ -3,11 +3,11 @@
         "step": {
             "user": {
                 "title": "Windhager",
-                "description": "Verbindung zur Windhager-Heizung herstellen.",
+                "description": "Connect to the Windhager heating system.",
                 "data": {
                     "host": "Host",
-                    "username": "Benutzername",
-                    "password": "Passwort"
+                    "username": "Username",
+                    "password": "Password"
                 }
             }
         }

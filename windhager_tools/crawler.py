@@ -5,13 +5,14 @@ from windhager_tools.discovery import (
 )
 from windhager_tools.reader import read_lookup
 from windhager_tools.resources import (
+    DEFAULT_LANGUAGE,
     Resources,
 )
 
 
-def crawl(client):
+def crawl(client, language=DEFAULT_LANGUAGE):
 
-    resources = Resources()
+    resources = Resources(language)
 
     resources.load(client)
 
