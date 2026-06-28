@@ -194,19 +194,30 @@ class WindhagerSensor(
     @property
     def device_class(self):
 
-        # Gleicher Schutz wie bei native_unit_of_measurement/
-        # suggested_display_precision: eine device_class signalisiert
-        # HA "dieser Sensor hat einen numerischen Wert in dieser
-        # Einheit". Liefert die Heizung (noch) einen Platzhalter wie
-        # "-" statt einer Zahl, darf hier nichts gesetzt werden.
+        # "valid" statt "numeric": Datum/Zeit-Werte sind nicht
+        # numerisch (has_numeric_value), aber trotzdem ein gueltiger,
+        # typisierter Wert (has_valid_value) - device_class soll fuer
+        # beide Faelle gesetzt werden, sofern der Wert kein
+        # Platzhalter ("-") ist.
         if not self.meta.get(
-            "numeric",
+            "valid",
             False,
         ):
             return None
 
         return self.meta.get(
             "device_class"
+        )
+
+    @property
+    def state_class(self):
+
+        # metadata.state_class() liefert bereits None fuer nicht-
+        # numerische Werte und fuer device_classes, bei denen HA
+        # keinen state_class erlaubt (DATE, ENUM, ...) - hier nur
+        # noch durchreichen.
+        return self.meta.get(
+            "state_class"
         )
 
     @property
@@ -219,9 +230,18 @@ class WindhagerSensor(
     @property
     def native_value(self):
 
-        return self.coordinator.data[
+        # metadata.parsed_value() wandelt Datum/Zeit-Strings ("20"/
+        # "21" Einheit) in echte date/time-Objekte um, wie von HA fuer
+        # device_class DATE/TIME gefordert. Fuer alle anderen Faelle
+        # liefert es den unveraenderten Rohwert.
+        live_value = self.coordinator.data[
             self.oid
         ].value
+
+        return metadata.parsed_value(
+            self.entry,
+            live_value,
+        )
 
     @property
     def native_unit_of_measurement(self):
@@ -241,10 +261,17 @@ class WindhagerSensor(
             self.oid
         )
 
-        if live_entry is not None and live_entry.unit:
-            return live_entry.unit
+        raw_unit = (
+            live_entry.unit
+            if live_entry is not None and live_entry.unit
+            else self.entry.unit
+        )
 
-        return self.entry.unit
+        # Windhager liefert teils eigene/deutsche Einheitenkuerzel
+        # (z.B. "Std" statt "h"), die HA fuer die jeweilige
+        # device_class nicht akzeptiert - hier auf die von HA
+        # erwartete Einheit uebersetzen.
+        return metadata.translate_unit(raw_unit)
 
     @property
     def suggested_display_precision(self):
