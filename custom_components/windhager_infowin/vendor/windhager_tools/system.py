@@ -7,6 +7,7 @@ from .catalog import (
 )
 from .crawler import crawl
 from .poller import Poller
+from .resources import DEFAULT_LANGUAGE
 
 
 class WindhagerSystem:
@@ -15,10 +16,12 @@ class WindhagerSystem:
         self,
         client,
         catalog_path="catalog.json",
+        language=DEFAULT_LANGUAGE,
     ):
 
         self.client = client
         self.catalog_path = Path(catalog_path)
+        self.language = language
 
         self.modules = None
         self.poller = None
@@ -40,7 +43,8 @@ class WindhagerSystem:
             print("Starte Discovery...")
 
             self.modules = crawl(
-                self.client
+                self.client,
+                self.language,
             )
 
             save_catalog(

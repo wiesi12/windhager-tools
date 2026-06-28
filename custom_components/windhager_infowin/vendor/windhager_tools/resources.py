@@ -1,9 +1,34 @@
 from xml.etree import ElementTree
 
 
+# Sprachen, fuer die Windhager fertige Uebersetzungsressourcen auf
+# der Box bereitstellt (xml/EbenenTexte_<lang>.xml,
+# xml/VarIdentTexte_<lang>.xml). "de" ist immer als Fallback
+# verfuegbar; alle anderen Sprachen koennen je nach Firmware-Version
+# fehlen, deshalb der Fallback-Mechanismus in load().
+SUPPORTED_LANGUAGES = {
+    "de",
+    "en",
+    "fr",
+    "it",
+}
+
+DEFAULT_LANGUAGE = "de"
+
+
 class Resources:
 
-    def __init__(self):
+    def __init__(self, language=DEFAULT_LANGUAGE):
+
+        # Unbekannte/nicht unterstuetzte Sprachen (z.B. "nl", weil
+        # Windhager dafuer keine Ressourcendatei anbietet) fallen auf
+        # Deutsch zurueck, statt beim Laden mit einem HTTP 404 zu
+        # scheitern.
+        self.language = (
+            language
+            if language in SUPPORTED_LANGUAGES
+            else DEFAULT_LANGUAGE
+        )
 
         self.lookup_names = {}
         self.entry_names = {}
@@ -16,7 +41,7 @@ class Resources:
     def _load_lookup_names(self, client):
 
         xml = client.resource(
-            "xml/EbenenTexte_de.xml"
+            f"xml/EbenenTexte_{self.language}.xml"
         )
 
         root = ElementTree.fromstring(xml)
@@ -36,7 +61,7 @@ class Resources:
     def _load_entry_names(self, client):
 
         xml = client.resource(
-            "xml/VarIdentTexte_de.xml"
+            f"xml/VarIdentTexte_{self.language}.xml"
         )
 
         root = ElementTree.fromstring(xml)
