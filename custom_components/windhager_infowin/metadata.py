@@ -278,43 +278,15 @@ def suggested_precision(entry):
     return None
 
 
-# LON/SNVT-Standard definiert fuer mehrere Datentypen einen festen
-# "kein gueltiger Wert"-Sentinel statt eines echten Messwerts - siehe
-# LonMark SNVT-Spezifikation. Diese Werte erscheinen in der Praxis,
-# wenn ein Fuehler/Sensor (noch) nicht angeschlossen oder die Funktion
-# nicht aktiv ist. Ohne Behandlung wuerden sie als ganz normaler,
-# aber vollkommen unplausibler Messwert angezeigt (z.B. "327.67 °C").
-#
-# - SNVT_temp / SNVT_temp_p: 327.67 (0x7FFF) = "Not Active" (NA)
-# - SNVT_count (16-bit unsigned, keine Einheit): 65535 (0xFFFF) =
-#   ungueltig/nicht initialisiert
-_TEMP_SENTINEL = 327.67
-_COUNT_SENTINEL = 65535
+def suggested_precision(entry):
 
+    if entry.unit == "°C":
+        return 1
 
-def is_sentinel_value(entry, live_value=None):
-    """Pruefen, ob der Wert einem bekannten LON/SNVT-"kein Wert"-
-    Sentinel entspricht (siehe Konstanten oben). Bewusst eng an die
-    jeweilige Einheit gebunden, damit z.B. ein echter Zaehlerstand von
-    65535 (bei einer Variable MIT Einheit) nicht faelschlich verworfen
-    wird - der Sentinel gilt nur fuer unitlose SNVT_count-Felder bzw.
-    SNVT_temp-Felder mit °C/K.
-    """
+    if entry.unit == "%":
+        return 0
 
-    value = entry.value if live_value is None else live_value
-
-    try:
-        numeric_value = float(str(value).replace(",", "."))
-    except (ValueError, TypeError):
-        return False
-
-    if entry.unit in ("°C", "K"):
-        return numeric_value == _TEMP_SENTINEL
-
-    if entry.unit is None:
-        return numeric_value == _COUNT_SENTINEL
-
-    return False
+    return None
 
 
 def has_numeric_value(entry, live_value=None):
@@ -328,19 +300,11 @@ def has_numeric_value(entry, live_value=None):
     Platzhalter "-" wird hier ebenfalls korrekt als nicht-numerisch
     erkannt.
 
-    LON/SNVT-"kein Wert"-Sentinel (siehe is_sentinel_value()) gelten
-    hier bewusst ebenfalls als NICHT numerisch - sonst wuerde z.B.
-    "327.67 °C" als ganz normaler Temperaturmesswert erscheinen,
-    obwohl er laut LON-Standard "Sensor nicht aktiv" bedeutet.
-
     Datum/Zeit-Werte gelten hier bewusst NICHT als "numerisch" (siehe
     has_valid_value()/parsed_value() fuer diese) - state_class macht
     fuer Datum/Zeit ohnehin keinen Sinn (HA verbietet state_class fuer
     device_class DATE explizit).
     """
-
-    if is_sentinel_value(entry, live_value):
-        return False
 
     value = entry.value if live_value is None else live_value
 
@@ -387,9 +351,6 @@ def parsed_value(entry, live_value=None):
     """Den aktuellen Wert in das von HA fuer die jeweilige
     device_class erwartete Python-Objekt umwandeln:
 
-    - LON/SNVT-"kein Wert"-Sentinel (327.67 °C, 65535 ohne Einheit)
-      -> None (HA zeigt den Sensor dann als "unavailable" an, statt
-      einen physikalisch unplausiblen Wert wie "327.67 °C")
     - device_class DATE  -> datetime.date
     - device_class TIME  -> datetime.time
     - alles andere       -> Rohwert unveraendert (Zahl bleibt String,
@@ -397,9 +358,6 @@ def parsed_value(entry, live_value=None):
     """
 
     value = entry.value if live_value is None else live_value
-
-    if is_sentinel_value(entry, live_value):
-        return None
 
     if entry.unit == "20":
         return parse_date(value)
