@@ -110,23 +110,17 @@ async def async_setup_entry(
         system,
     )
 
-    # WICHTIG: bewusst NICHT async_config_entry_first_refresh()
-    # (das wuerde den gesamten Integrations-Start blockieren, bis
-    # alle ~200 NV-Detail-API-Calls durchgelaufen sind - je nach
-    # Netzwerk/Anlage kann das mehrere Sekunden bis Minuten dauern
-    # und im schlimmsten Fall den HA-Bootstrap verzoegern). Die NV-
-    # Sensoren werden ueber async_forward_entry_setups() unten sofort
-    # mit dem aktuellen Stand (Platzhalter "-") angelegt; der erste
-    # echte Refresh laeuft im Hintergrund und aktualisiert sie, sobald
-    # er fertig ist. Schlaegt er fehl, greift einfach der naechste
-    # reguläre 10-Minuten-Zyklus - unkritisch, da nur Komfortwerte
-    # (Betriebsstunden, Pelletverbrauch) betroffen sind, keine fuer
-    # den Integrationsbetrieb selbst notwendigen Daten.
-    entry.async_create_background_task(
-        hass,
-        nv_coordinator.async_refresh(),
-        name=f"{DOMAIN}_nv_first_refresh",
-    )
+    # WICHTIG: bewusst BLOCKIEREND (anders als zuvor). Ein nicht-
+    # blockierender Hintergrund-Refresh fuehrte zu einer Race
+    # Condition: einige Eigenschaften (z.B. entity_category, siehe
+    # metadata.is_raw_hex_value()) werden von Home Assistant NUR beim
+    # allerersten Hinzufuegen der Entity zur Registry ausgewertet -
+    # zu diesem Zeitpunkt lag bei nicht-blockierendem Refresh aber nur
+    # der Platzhalterwert "-" vor, wodurch z.B. rohe Hex-Bitfeld-Werte
+    # faelschlich NICHT als Diagnose-Entity erkannt wurden. Kostet
+    # zusaetzliche Sekunden beim Einrichten/Neuladen der Integration,
+    # garantiert dafuer korrekte Metadaten ab dem ersten Start.
+    await nv_coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})
 
