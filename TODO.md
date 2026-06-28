@@ -3,23 +3,33 @@
 ## Core Library
 
 ### Discovery
+
 - [x] Discover modules
 - [x] Discover functions
 - [x] Discover lookups
-- [x] Read XML resources
-- [x] Build OID map
+- [x] Discover NV's (LON network variables)
+- [x] Read XML resources (EbenenTexte, VarIdentTexte)
+- [x] Multi-language resource support (de/en/fr/it)
+- [x] Build OID map (including NV entries)
+- [x] Fix lookup-name collisions across function types (fcttyp)
 
 ### Models
+
 - [x] Complete Entry model
+- [x] NvEntry model
 - [ ] Typed value helpers
 - [ ] Enum helper methods
 
 ### Catalog
+
 - [x] Save catalog
 - [x] Load catalog
-- [ ] Catalog versioning
+- [x] Per-language catalog caching
+- [x] Store catalog inside the integration directory (persistent_directory)
+- [ ] Catalog versioning / schema migration
 
 ### Diagnostics
+
 - [x] Statistics
 - [x] Validation
 - [ ] Unknown type report
@@ -28,8 +38,10 @@
 - [ ] Firmware capability report
 
 ### Polling
+
 - [x] Poll OIDs
-- [ ] Optimized polling
+- [x] Poll NV's (separate, slower interval to limit extra API load)
+- [ ] Optimized/parallel polling
 - [ ] Change detection
 
 ---
@@ -40,53 +52,74 @@
 
 - [x] Host
 - [x] Username
-- [x] Password
+- [x] Password (masked input)
 - [ ] Select discovered modules
 - [ ] Select sensor groups
-- [ ] Reconfigure options
+- [ ] Reconfigure options (e.g. poll intervals)
 
 ### Sensor
 
 - [x] Basic sensors
-- [ ] Metadata mapping
-- [ ] Better naming
-- [ ] Better icons
-- [ ] Entity categories
-- [ ] Device classes
-- [ ] State classes
+- [x] Metadata mapping (units, device classes, state classes)
+- [x] Unit translation (Windhager-specific -> HA units, e.g. Std -> h)
+- [x] Readable naming (lookup/entry name composition)
+- [x] Readable names for known NV's, raw name fallback for unknown ones
+- [x] Icons
+- [x] Entity categories (diagnostic)
+- [x] Device classes
+- [x] State classes (measurement / total_increasing)
+- [x] Date/time parsing (native date/time objects, not raw strings)
+- [x] Stable, readable entity_ids (suggested_object_id)
+- [x] Graceful handling of non-numeric placeholder values ("-")
 
-### Number
+### Number / Select
 
 - [ ] Read/write values
 - [ ] Min / Max / Step
-
-### Select
-
 - [ ] Lookup enums
 - [ ] Write support
 
 ### Devices
 
+- [x] Basic device per module
 - [ ] Better device hierarchy
-- [ ] Module devices
-- [ ] Function devices
+- [ ] Function-level devices
+
+### Branding / Packaging
+
+- [x] Custom icon/logo (brand/ directory)
+- [x] Dark mode variants
+- [x] manifest.json complete (issue_tracker, version, etc.)
+- [x] hacs.json
+- [x] Non-blocking NV first refresh (background task)
+- [x] config_entry passed to coordinators
 
 ---
 
 ## Compatibility
 
-- [ ] Multiple firmware versions
-- [ ] Missing XML entries
-- [ ] Unknown modules
-- [ ] Automatic capability detection
+- [x] MES INFINITY + InfoWIN Touch (RC7030, firmware S 1.0.2) - tested
+- [ ] MES PLUS (older, non-Touch) - untested, likely compatible
+- [ ] Newer firmware / comWinStack API - likely NOT compatible, untested
+- [ ] Multiple firmware versions / automatic capability detection
+- [ ] Missing XML entries handling
+- [ ] Unknown modules handling
 
 ---
 
+## Release / Project
+
+- [x] Localization (entity names: de/en/fr/it)
+- [x] README documentation
+- [x] LICENSE (MIT)
+- [x] Remove credentials from git history
+- [x] First HACS-compatible release (v0.1.0)
+- [ ] Unit tests
+- [ ] Submit to HACS default store (after some real-world testing)
+- [ ] Community forum post to find testers for other firmware/hardware generations
+
 ## Future
 
-- [ ] Generate readable default entity IDs
-- [ ] Write support
-- [ ] Localization
-- [ ] Unit tests
-- [ ] Documentation
-- [ ] HACS release
+- [ ] Write support (temperature setpoints, modes)
+- [ ] Config-flow options for selecting which modules/sensors to expose
+- [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver)
