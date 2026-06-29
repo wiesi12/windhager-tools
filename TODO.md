@@ -130,7 +130,18 @@
 
 ## Future
 
-- [ ] Write support (temperature setpoints, modes)
+- [ ] Write support (temperature setpoints, modes). Endpoint
+      confirmed via browser dev tools while testing the official web
+      interface: `PUT /api/1.0/datapoint` with JSON body
+      `{"OID": "/1/17/0/3/50/0", "value": "1"}` (OID format matches
+      the existing lookup path scheme, just as one string with a
+      leading slash instead of separate URL segments). Confirmed
+      working with a plain ENDUSER-level login (the same `USER`
+      account this integration already uses for reading) - no need
+      for SERVICE/OEM credentials. The `ws.setDP.req.xml`/
+      `ws.writeDP.req.xml` resources under `/res/xml/` are SOAP and
+      NOT what the current web interface actually uses - ignore them,
+      they're apparently a leftover from an older API generation.
 - [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver) - considered and rejected for now (2026-06-29), risk to the heating controller not worth the time saved on a one-time setup step
 - [ ] Refine NV group selection: currently a single "NV's" checkbox
       covers all ~200 NV entries per module (e.g. BioWIN) - too coarse
