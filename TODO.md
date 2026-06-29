@@ -41,7 +41,14 @@
 
 - [x] Poll OIDs
 - [x] Poll NV's (separate, slower interval to limit extra API load)
-- [ ] Optimized/parallel polling
+- [ ] Optimized/parallel polling (note: the official Windhager web
+      interface itself polls every 30 seconds, observed via browser
+      dev tools on 2026-06-29, so the device is clearly designed to
+      handle frequent polling - our current 5/10 minute intervals are
+      conservative by comparison. Still rejected parallelizing the
+      *initial* discovery crawl specifically, since that's a burst of
+      ~80-280 near-simultaneous requests rather than steady periodic
+      polling, which is a different kind of load)
 - [ ] Change detection
 
 ---
