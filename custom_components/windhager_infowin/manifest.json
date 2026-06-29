@@ -1,7 +1,7 @@
 {
     "domain": "windhager_infowin",
     "name": "Windhager InfoWIN",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "documentation": "https://github.com/wiesi12/windhager-tools",
     "issue_tracker": "https://github.com/wiesi12/windhager-tools/issues",
     "requirements": [],
