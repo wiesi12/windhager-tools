@@ -123,10 +123,18 @@ Diese Integration wurde entwickelt und getestet mit einer Windhager-Anlage
   des Geräts (Reset-Taste > 10 Sekunden).
 - Die Integration ist read-only (nur Sensoren, kein Schreibzugriff/keine
   Steuerung der Anlage).
+- Die "Modulinfo"-Sensoren (Funktionsbezeichnung, Softwareversion
+  Feuerungsautomat, Version HW) zeigen bei reinen Heizkreis-Modulen
+  (HK1/HK2/HK3) den Zustand "unbekannt" – das ist kein Fehler dieser
+  Integration, sondern entspricht 1:1 dem, was auch das offizielle
+  Windhager-Webinterface für diese Module anzeigt. Diese Felder
+  scheinen nur am Hauptmodul mit dem eigentlichen Feuerungsautomaten
+  (z. B. BioWIN) befüllt zu werden.
 
 Rückmeldungen zu Erfolg oder Problemen auf anderen Anlagen/Firmware-Versionen
 sind über [GitHub-Issues](https://github.com/wiesi12/windhager-tools/issues)
 herzlich willkommen.
+
 
 ## Mitwirken
 

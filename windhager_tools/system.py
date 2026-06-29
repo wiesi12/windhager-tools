@@ -17,11 +17,18 @@ class WindhagerSystem:
         client,
         catalog_path="catalog.json",
         language=DEFAULT_LANGUAGE,
+        selected_module_ids=None,
     ):
 
         self.client = client
         self.catalog_path = Path(catalog_path)
         self.language = language
+
+        # None bedeutet "alle Module" (Rueckwaertskompatibilitaet
+        # fuer Config-Entries, die vor Einfuehrung der Modul-Auswahl
+        # eingerichtet wurden, sowie fuer eigenstaendige Nutzung der
+        # Library ausserhalb der HA-Integration).
+        self.selected_module_ids = selected_module_ids
 
         self.modules = None
         self.poller = None
@@ -34,7 +41,7 @@ class WindhagerSystem:
 
             print("Lade Katalog...")
 
-            self.modules = load_catalog(
+            all_modules = load_catalog(
                 self.catalog_path
             )
 
@@ -42,15 +49,35 @@ class WindhagerSystem:
 
             print("Starte Discovery...")
 
-            self.modules = crawl(
+            all_modules = crawl(
                 self.client,
                 self.language,
             )
 
+            # WICHTIG: der VOLLSTAENDIGE, ungefilterte Katalog wird
+            # gespeichert - nicht nur die ausgewaehlten Module. Wuerde
+            # der Nutzer seine Modul-Auswahl spaeter aendern (siehe
+            # Options-Flow), waeren sonst die abgewaehlten Module
+            # dauerhaft verloren und ein erneuter, vollstaendiger
+            # Discovery-Crawl noetig, um sie wieder verfuegbar zu
+            # machen.
             save_catalog(
-                self.modules,
+                all_modules,
                 self.catalog_path,
             )
+
+        if self.selected_module_ids is None:
+
+            self.modules = all_modules
+
+        else:
+
+            self.modules = [
+                module
+                for module in all_modules
+                if str(module.id)
+                in self.selected_module_ids
+            ]
 
         self.poller = Poller(
             self.client,
