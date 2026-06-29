@@ -123,3 +123,17 @@
 - [ ] Write support (temperature setpoints, modes)
 - [ ] Config-flow options for selecting which modules/sensors to expose
 - [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver)
+- [ ] Refine NV group selection: currently a single "NV's" checkbox
+      covers all ~200 NV entries per module (e.g. BioWIN) - too coarse
+      for meaningful filtering. Individual per-NV selection isn't
+      practical either since most NVs only have a cryptic raw name
+      (no entry in nv_names.py). Revisit once more NV names are
+      known/whitelisted, or find another sensible grouping
+      (e.g. by snvt_name/category).
+- [ ] Architecture simplification: move windhager_tools/ directly into
+      custom_components/windhager_infowin/lib/ with relative imports
+      from the start, eliminating tools/build_integration.py and the
+      vendor/ copy step entirely. Only worthwhile now that
+      windhager_tools is no longer used as a standalone pip package
+      (decided 2026-06-29) - otherwise this is a bigger, separate
+      refactor, best done on its own, not mixed with other changes.

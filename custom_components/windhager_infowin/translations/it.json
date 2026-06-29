@@ -9,7 +9,24 @@
                     "username": "Nome utente",
                     "password": "Password"
                 }
+            },
+            "select_modules": {
+                "title": "Seleziona i moduli",
+                "description": "Scegli quali moduli del tuo impianto di riscaldamento devono essere configurati. I moduli non selezionati non verranno interrogati, il che velocizza la configurazione e riduce il numero di sensori creati.",
+                "data": {
+                    "modules": "Moduli"
+                }
+            },
+            "select_groups": {
+                "title": "Seleziona i gruppi di sensori per {module_name}",
+                "description": "Scegli quali gruppi di sensori di \"{module_name}\" devono essere creati. Deseleziona i gruppi non necessari (ad es. dati diagnostici) per ridurre il numero di sensori.",
+                "data": {
+                    "groups": "Gruppi di sensori"
+                }
             }
+        },
+        "error": {
+            "cannot_connect": "Impossibile connettersi al server web Windhager. Verifica host, nome utente e password."
         }
     }
 }

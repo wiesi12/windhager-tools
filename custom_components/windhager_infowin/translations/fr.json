@@ -9,7 +9,24 @@
                     "username": "Nom d'utilisateur",
                     "password": "Mot de passe"
                 }
+            },
+            "select_modules": {
+                "title": "Sélectionner les modules",
+                "description": "Choisissez les modules de votre système de chauffage à configurer. Les modules non sélectionnés ne seront pas interrogés, ce qui accélère la configuration et réduit le nombre de capteurs créés.",
+                "data": {
+                    "modules": "Modules"
+                }
+            },
+            "select_groups": {
+                "title": "Sélectionner les groupes de capteurs pour {module_name}",
+                "description": "Choisissez les groupes de capteurs de \"{module_name}\" à créer. Désélectionnez les groupes dont vous n'avez pas besoin (par exemple les données de diagnostic uniquement) pour réduire le nombre de capteurs.",
+                "data": {
+                    "groups": "Groupes de capteurs"
+                }
             }
+        },
+        "error": {
+            "cannot_connect": "Impossible de se connecter au serveur web Windhager. Veuillez vérifier l'hôte, le nom d'utilisateur et le mot de passe."
         }
     }
 }

@@ -9,7 +9,24 @@
                     "username": "Username",
                     "password": "Password"
                 }
+            },
+            "select_modules": {
+                "title": "Select modules",
+                "description": "Choose which modules of your heating system should be set up. Modules you don't select won't be polled, which speeds up setup and reduces the number of sensors created.",
+                "data": {
+                    "modules": "Modules"
+                }
+            },
+            "select_groups": {
+                "title": "Select sensor groups for {module_name}",
+                "description": "Choose which sensor groups of \"{module_name}\" should be created. Deselect groups you don't need (e.g. diagnostic-only data) to reduce the number of sensors.",
+                "data": {
+                    "groups": "Sensor groups"
+                }
             }
+        },
+        "error": {
+            "cannot_connect": "Could not connect to the Windhager webserver. Please check the host, username, and password."
         }
     }
 }

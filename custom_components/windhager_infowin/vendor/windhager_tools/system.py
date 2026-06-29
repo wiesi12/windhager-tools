@@ -1,4 +1,5 @@
 from collections import Counter
+import copy
 from pathlib import Path
 
 from .catalog import (
@@ -10,6 +11,59 @@ from .poller import Poller
 from .resources import DEFAULT_LANGUAGE
 
 
+def _filter_modules_by_groups(
+    modules,
+    selected_groups_by_module,
+):
+    """Eine KOPIE der Module-Liste liefern, bei der pro Modul nur die
+    in selected_groups_by_module gelisteten Lookup-Gruppen erhalten
+    bleiben. Lookup-Gruppen OHNE Namen (lookup.name == "") werden
+    immer erhalten - sie hatten im Config-Flow keine eigene Checkbox
+    (siehe config_flow._current_module_lookup_keys()) und sollten
+    daher nicht durch eine fehlende Erwaehnung in der Auswahl
+    versehentlich herausgefiltert werden.
+
+    Arbeitet auf einer tiefen Kopie (copy.deepcopy), damit der
+    aufrufende Code (z.B. der bereits geladene/gecachte volle
+    Katalog) unverändert bleibt, falls dieselben Modul-Objekte
+    anderswo noch referenziert werden.
+    """
+
+    filtered_modules = []
+
+    for module in modules:
+
+        group_keys = selected_groups_by_module.get(
+            str(module.id)
+        )
+
+        # Kein Eintrag fuer dieses Modul in der Auswahl (z.B. weil
+        # die Config-Entry vor Einfuehrung der Gruppen-Feinauswahl
+        # erstellt wurde) -> Modul unveraendert, mit allen Gruppen,
+        # uebernehmen.
+        if group_keys is None:
+
+            filtered_modules.append(module)
+
+            continue
+
+        module_copy = copy.deepcopy(module)
+
+        for function in module_copy.functions:
+
+            function.lookups = [
+                lookup
+                for lookup in function.lookups
+                if not lookup.name
+                or f"{function.type}:{lookup.id}"
+                in group_keys
+            ]
+
+        filtered_modules.append(module_copy)
+
+    return filtered_modules
+
+
 class WindhagerSystem:
 
     def __init__(
@@ -18,17 +72,22 @@ class WindhagerSystem:
         catalog_path="catalog.json",
         language=DEFAULT_LANGUAGE,
         selected_module_ids=None,
+        selected_groups_by_module=None,
     ):
 
         self.client = client
         self.catalog_path = Path(catalog_path)
         self.language = language
 
-        # None bedeutet "alle Module" (Rueckwaertskompatibilitaet
-        # fuer Config-Entries, die vor Einfuehrung der Modul-Auswahl
-        # eingerichtet wurden, sowie fuer eigenstaendige Nutzung der
-        # Library ausserhalb der HA-Integration).
+        # None bedeutet "alle Module"/"alle Gruppen"
+        # (Rueckwaertskompatibilitaet fuer Config-Entries, die vor
+        # Einfuehrung der Modul-/Gruppen-Auswahl eingerichtet wurden,
+        # sowie fuer eigenstaendige Nutzung der Library ausserhalb der
+        # HA-Integration).
         self.selected_module_ids = selected_module_ids
+        self.selected_groups_by_module = (
+            selected_groups_by_module
+        )
 
         self.modules = None
         self.poller = None
@@ -78,6 +137,13 @@ class WindhagerSystem:
                 if str(module.id)
                 in self.selected_module_ids
             ]
+
+        if self.selected_groups_by_module is not None:
+
+            self.modules = _filter_modules_by_groups(
+                self.modules,
+                self.selected_groups_by_module,
+            )
 
         self.poller = Poller(
             self.client,

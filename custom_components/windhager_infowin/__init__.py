@@ -68,11 +68,16 @@ async def async_setup_entry(
         )
 
         # .get() statt direktem Zugriff: Config-Entries, die VOR
-        # Einfuehrung der Modul-Auswahl eingerichtet wurden, haben
-        # dieses Feld noch nicht - None bedeutet fuer WindhagerSystem
-        # "alle Module verwenden" (Ruckwaertskompatibilitaet).
+        # Einfuehrung der Modul-/Gruppen-Auswahl eingerichtet wurden,
+        # haben diese Felder noch nicht - None bedeutet fuer
+        # WindhagerSystem "alle Module"/"alle Gruppen verwenden"
+        # (Ruckwaertskompatibilitaet).
         selected_module_ids = entry.data.get(
             "selected_modules"
+        )
+
+        selected_groups_by_module = entry.data.get(
+            "selected_groups"
         )
 
         return WindhagerSystem(
@@ -87,6 +92,7 @@ async def async_setup_entry(
             ),
             language=language,
             selected_module_ids=selected_module_ids,
+            selected_groups_by_module=selected_groups_by_module,
         )
 
     system = await hass.async_add_executor_job(
