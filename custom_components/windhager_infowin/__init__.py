@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .vendor.windhager_tools import (
+from .lib import (
     WindhagerClient,
     WindhagerSystem,
 )

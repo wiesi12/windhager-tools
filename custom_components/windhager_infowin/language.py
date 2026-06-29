@@ -1,6 +1,6 @@
 from homeassistant.core import HomeAssistant
 
-from .vendor.windhager_tools.resources import (
+from .lib.resources import (
     DEFAULT_LANGUAGE,
     SUPPORTED_LANGUAGES,
 )

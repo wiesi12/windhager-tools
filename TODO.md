@@ -130,10 +130,11 @@
       (no entry in nv_names.py). Revisit once more NV names are
       known/whitelisted, or find another sensible grouping
       (e.g. by snvt_name/category).
-- [ ] Architecture simplification: move windhager_tools/ directly into
+- [x] Architecture simplification: moved windhager_tools/ directly into
       custom_components/windhager_infowin/lib/ with relative imports
       from the start, eliminating tools/build_integration.py and the
-      vendor/ copy step entirely. Only worthwhile now that
-      windhager_tools is no longer used as a standalone pip package
-      (decided 2026-06-29) - otherwise this is a bigger, separate
-      refactor, best done on its own, not mixed with other changes.
+      vendor/ copy step entirely (done 2026-06-29, after the v0.2.0
+      release). Also removed pyproject.toml/MANIFEST.in (only existed
+      for windhager_tools as a standalone pip package, which is no
+      longer a goal) and a stray duplicate manifest.json that had
+      ended up at the repo root.

@@ -7,7 +7,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from . import metadata
 from . import naming
-from .vendor.windhager_tools.slug import build_slug
+from .lib.slug import build_slug
 
 
 async def async_setup_entry(

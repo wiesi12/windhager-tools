@@ -4,8 +4,8 @@ import voluptuous as vol
 
 from .const import DOMAIN
 from .language import resolve_language
-from .vendor.windhager_tools import WindhagerClient
-from .vendor.windhager_tools.crawler import crawl_structure
+from .lib import WindhagerClient
+from .lib.crawler import crawl_structure
 
 
 class WindhagerConfigFlow(

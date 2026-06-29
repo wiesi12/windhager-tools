@@ -11,6 +11,6 @@
     "config_flow": true,
     "iot_class": "local_polling",
     "loggers": [
-        "windhager_tools"
+        "custom_components.windhager_infowin"
     ]
 }
