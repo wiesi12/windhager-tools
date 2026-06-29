@@ -1,152 +1,152 @@
 # Windhager InfoWIN – Home Assistant Integration
 
-Eine Custom Integration für Home Assistant, die Windhager-Heizungsanlagen
-mit **InfoWIN**-Webserver (lokales Netzwerk, kein Cloud-Zugriff nötig)
-als Sensoren einbindet.
+A custom integration for Home Assistant that connects to Windhager
+heating systems via the local **InfoWIN** webserver (local network
+only, no cloud access needed) and exposes their data as sensors.
 
-> **Hinweis:** Dies ist ein unabhängiges Community-Projekt und steht in
-> keiner Verbindung zur Windhager Zentralheizung GmbH. "Windhager" ist
-> eine Marke der Windhager Zentralheizung GmbH; die Nennung dient
-> ausschließlich der Identifikation der unterstützten Geräte.
+> **Note:** This is an independent community project and is not
+> affiliated with Windhager Zentralheizung GmbH. "Windhager" is a
+> trademark of Windhager Zentralheizung GmbH; it is used here solely
+> to identify the supported devices.
 
-## Funktionsumfang
+## Features
 
-- Automatische Erkennung aller Module, Funktionsgruppen und
-  Messwerte/Einstellungen der Anlage (Discovery, kein manuelles
-  Eintragen von Datenpunkten nötig)
-- Über 350 Sensoren pro Anlage, inklusive Temperaturen, Drücke,
-  Drehzahlen, Status- und Betriebswerte
-- Zusätzlich rund 200 LON-Netzwerkvariablen (NV's) als eigene Sensoren,
-  z. B. Betriebsstunden, Pelletverbrauch, Anzahl Anheizvorgänge – mit
-  lesbaren Namen für die wichtigsten Werte
-- Sinnvolle Home-Assistant-Metadaten (Einheiten, Device-Klassen,
-  State-Klassen für Langzeitstatistiken/Energie-Dashboard) statt
-  reiner Rohwerte
-- Mehrsprachige Sensor-Namen (Deutsch, Englisch, Französisch,
-  Italienisch – je nach Windhager-Firmware verfügbar), automatisch
-  passend zur Home-Assistant-Systemsprache
-- Getrenntes Update-Intervall für normale Sensoren (Standard: 5 Minuten)
-  und für die NV-Werte (Standard: 10 Minuten), um die Heizungssteuerung
-  nicht unnötig mit Anfragen zu belasten
+- Automatically discovers all modules, function groups, and
+  data points/settings of your installation (no manual entry of
+  data points needed)
+- Over 350 sensors per installation, including temperatures,
+  pressures, pump speeds, status and operating values
+- Also exposes around 200 LON network variables (NV's) as additional
+  sensors, e.g. operating hours, pellet consumption, number of
+  ignition cycles – with readable names for the most common ones
+- Sensible Home Assistant metadata (units, device classes, state
+  classes for long-term statistics/the Energy dashboard) instead of
+  raw values
+- Multi-language sensor names (German, English, French, Italian –
+  depending on what your Windhager firmware provides), automatically
+  matched to your Home Assistant system language
+- Separate update interval for regular sensors (default: 5 minutes)
+  and NV values (default: 10 minutes), to avoid putting unnecessary
+  load on the heating controller
+- During setup, you can choose which modules (e.g. individual heating
+  circuits) and which sensor groups per module should be created
 
 ## Installation
 
-### Über HACS (empfohlen)
+### Via HACS (recommended)
 
-1. In HACS nach "Windhager InfoWIN" suchen und installieren
-   *(oder als benutzerdefiniertes Repository hinzufügen, falls noch
-   nicht im HACS-Standardverzeichnis gelistet: HACS → Integrationen →
-   Drei-Punkte-Menü → Benutzerdefinierte Repositories → diese
-   Repository-URL eintragen)*
-2. Home Assistant neu starten
+1. Search for "Windhager InfoWIN" in HACS and install it
+   *(or add it as a custom repository if it isn't yet listed in the
+   default HACS store: HACS → Integrations → three-dot menu → Custom
+   repositories → add this repository's URL)*
+2. Restart Home Assistant
 
-### Manuell
+### Manual
 
-1. Den Ordner `custom_components/windhager_infowin` in das
-   `custom_components`-Verzeichnis deiner Home-Assistant-Installation
-   kopieren
-2. Home Assistant neu starten
+1. Copy the `custom_components/windhager_infowin` folder into the
+   `custom_components` directory of your Home Assistant installation
+2. Restart Home Assistant
 
-## Einrichtung
+## Setup
 
-1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
-2. Nach "Windhager" suchen
-3. Folgende Angaben machen:
-   - **Host**: IP-Adresse oder Hostname des Windhager-Webservers
-     (z. B. `192.168.1.198`)
-   - **Benutzername**: Login für den Webserver (Standard nach
-     Werksreset häufig `USER`)
-   - **Passwort**: Passwort für den Webserver (Standard nach
-     Werksreset häufig `123`)
-4. Beim ersten Einrichten liest die Integration einmalig die komplette
-   Struktur der Anlage aus (Discovery) – das kann je nach Anlagengröße
-   10–30 Sekunden dauern. Danach wird das Ergebnis lokal zwischengespeichert
-   und beim nächsten Start nicht erneut abgefragt.
+1. **Settings → Devices & Services → Add Integration**
+2. Search for "Windhager"
+3. Enter the following:
+   - **Host**: IP address or hostname of the Windhager webserver
+     (e.g. `192.168.1.198`)
+   - **Username**: Login for the webserver (often `USER` by default
+     after a factory reset)
+   - **Password**: Password for the webserver (often `123` by
+     default after a factory reset)
+4. The integration will then read the structure of your system
+   (discovery) and let you pick which modules and sensor groups to
+   set up – this can take 10–30 seconds depending on the size of
+   your installation. The result is cached locally and won't be
+   re-fetched on subsequent starts.
 
-### Falls du das Webserver-Passwort nicht kennst
+### If you don't know the webserver password
 
-Wenn du die **Windhager-App** (myComfort o. ä.) zum Einrichten deiner
-Anlage benutzt hast, ändert diese beim Verbinden automatisch das
-Passwort des lokalen Webservers – und gibt es dir nirgends im Klartext
-heraus. In diesem Fall bleibt nur ein **Werksreset des Webservers**
-(Reset-Taste am Gerät, meist > 10 Sekunden gedrückt halten, siehe
-Anleitung deines Geräts), wodurch Benutzername/Passwort wieder auf die
-Standardwerte zurückgesetzt werden.
+If you've used the **Windhager app** (myComfort or similar) to set
+up your system, it automatically changes the local webserver's
+password when connecting – and never shows it to you in plain text.
+In that case, the only way back in is a **factory reset of the
+webserver** (reset button on the device, usually held for >10
+seconds, see your device's manual), which restores the default
+username/password.
 
-**Wichtig:** Nach einem Werksreset funktioniert die Windhager-App in
-der Regel nicht mehr mit diesem Gerät, da deren Ersteinrichtung das
-Passwort erneut ändern würde – du kannst dann effektiv nur noch
-zwischen "App-Zugriff" und "lokalem API-Zugriff (z. B. für diese
-Integration)" wählen, nicht beides gleichzeitig nutzen.
+**Important:** After a factory reset, the Windhager app generally
+won't work with this device anymore, since its setup process would
+change the password again – you effectively have to choose between
+"app access" and "local API access (e.g. for this integration)",
+not both at the same time.
 
-## Kompatibilität
+## Compatibility
 
-Diese Integration wurde entwickelt und getestet mit einer Windhager-Anlage
-(BioWIN Pelletkessel, Baujahr ca. 2012, mehrere Heizkreismodule) mit
-**InfoWIN Touch** Webserver, Hardware-Modell **RC7030**, Firmware "S 1.0.2"
-(2017), Steuerung **MES INFINITY**.
+This integration was developed and tested against a Windhager
+installation (BioWIN pellet boiler, built around 2012, multiple
+heating circuit modules) with an **InfoWIN Touch** webserver,
+hardware model **RC7030**, firmware "S 1.0.2" (2017), **MES
+INFINITY** control system.
 
-### Voraussetzungen
+### Requirements
 
-- Eine Windhager-Heizungsanlage mit **MES INFINITY**-Steuerung und einem
-  lokal erreichbaren **InfoWIN / InfoWIN Touch / Webserver Touch**
-  (Hardware-Modell RC7030), erreichbar über Digest-Auth-Login
-- Der Brennstofftyp (Pellet, Hackschnitzel, Holz, ...) sollte
-  keine Rolle spielen – die Datenstruktur (OIDs, LON-Netzwerkvariablen)
-  ist unabhängig vom Kesseltyp, solange die Steuerung MES INFINITY mit
-  RC7030-Webserver ist.
+- A Windhager heating system with **MES INFINITY** control and a
+  locally reachable **InfoWIN / InfoWIN Touch / Webserver Touch**
+  (hardware model RC7030), reachable via Digest Auth login
+- The fuel type (pellets, wood chips, logs, ...) shouldn't matter –
+  the data structure (OIDs, LON network variables) is independent of
+  the boiler type, as long as the control system is MES INFINITY
+  with an RC7030 webserver.
 
-### Wahrscheinlich NICHT kompatibel
+### Probably NOT compatible
 
-- **Neuere Geräte/Firmware-Versionen**, bei denen der lokale Webzugriff
-  nur noch eine "comWinStack API"-Begrüßungsseite zeigt (siehe z. B.
+- **Newer devices/firmware versions**, where the local web access
+  only shows a "comWinStack API" landing page (see e.g.
   [domfie/windhager-rest-api-documentation](https://github.com/domfie/windhager-rest-api-documentation)).
-  Diese API scheint einen anderen Aufbau zu haben als die hier
-  verwendete (ältere) REST-API – ein Funktionieren dieser Integration
-  damit ist **unwahrscheinlich**, ohne größere Anpassungen am Code.
-  Falls du eine solche Anlage hast und es trotzdem testen möchtest,
-  freue ich mich über eine Rückmeldung per Issue (Erfolg oder
-  Fehlschlag).
+  This API appears to have a different structure than the (older)
+  REST API used here – this integration **probably won't work**
+  with it without significant changes. If you have such a system and
+  want to try it anyway, I'd appreciate a report via Issue (whether
+  it works or not).
 
-### Ungetestet / unklar
+### Untested / unclear
 
-- Die ältere **MES PLUS**-Generation (Webserver-Modell vermutlich ebenfalls
-  RC7030, aber ohne "Touch"-Bedienelement) wurde nicht eigenständig
-  getestet, dürfte aber aufgrund der baugleichen Hardware ebenfalls
-  funktionieren.
+- The older **MES PLUS** generation (webserver model likely also
+  RC7030, but without the "Touch" display) hasn't been tested
+  independently, but should work given the shared hardware.
 
-### Bekannte Einschränkungen
+### Known limitations
 
-- Manche Nutzer berichten, dass Firmware-Updates den lokalen API-Zugriff
-  nachträglich einschränken oder das Standard-Login nach einem Reset
-  abweicht. Falls der Login nicht funktioniert, hilft oft ein Werksreset
-  des Geräts (Reset-Taste > 10 Sekunden).
-- Die Integration ist read-only (nur Sensoren, kein Schreibzugriff/keine
-  Steuerung der Anlage).
-- Die "Modulinfo"-Sensoren (Funktionsbezeichnung, Softwareversion
-  Feuerungsautomat, Version HW) zeigen bei reinen Heizkreis-Modulen
-  (HK1/HK2/HK3) den Zustand "unbekannt" – das ist kein Fehler dieser
-  Integration, sondern entspricht 1:1 dem, was auch das offizielle
-  Windhager-Webinterface für diese Module anzeigt. Diese Felder
-  scheinen nur am Hauptmodul mit dem eigentlichen Feuerungsautomaten
-  (z. B. BioWIN) befüllt zu werden.
+- Some users report that firmware updates restrict local API access
+  afterwards, or that the default login differs after a reset. If
+  login doesn't work, a factory reset of the device often helps
+  (reset button held for >10 seconds).
+- The integration is read-only (sensors only, no write access/control
+  of the system).
+- The "Modulinfo" sensors (Funktionsbezeichnung, Softwareversion
+  Feuerungsautomat, Version HW) show "unknown" on pure heating-circuit
+  modules (HK1/HK2/HK3) – this is not a bug in this integration, it
+  matches exactly what the official Windhager web interface shows for
+  these modules. These fields seem to only be populated on the main
+  module with the actual combustion controller (e.g. BioWIN).
 
-Rückmeldungen zu Erfolg oder Problemen auf anderen Anlagen/Firmware-Versionen
-sind über [GitHub-Issues](https://github.com/wiesi12/windhager-tools/issues)
-herzlich willkommen.
+Feedback on success or problems with other installations/firmware
+versions is very welcome via
+[GitHub Issues](https://github.com/wiesi12/windhager-tools/issues).
 
 
-## Mitwirken
+## Contributing
 
-Fehlerberichte, Erfahrungen mit anderen Anlagen/Firmware-Versionen und
-Pull Requests sind willkommen. Bitte beim Melden eines Problems angeben:
+Bug reports, experiences with other installations/firmware versions,
+and pull requests are welcome. When reporting an issue, please
+include:
 
-- Windhager-Webserver-Modell und Firmware-Version (siehe Login-Seite
-  des Webservers)
-- Home-Assistant-Version
-- Relevante Logausgabe (Einstellungen → System → Logs, nach
-  "windhager" filtern)
+- Windhager webserver model and firmware version (see the
+  webserver's login page)
+- Home Assistant version
+- Relevant log output (Settings → System → Logs, filtered by
+  "windhager")
 
-## Lizenz
+## License
 
-Siehe [LICENSE](LICENSE).
+See [LICENSE](LICENSE).
