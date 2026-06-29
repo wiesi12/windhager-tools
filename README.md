@@ -129,6 +129,16 @@ INFINITY** control system.
   matches exactly what the official Windhager web interface shows for
   these modules. These fields seem to only be populated on the main
   module with the actual combustion controller (e.g. BioWIN).
+- After a power outage (or any abrupt disconnection), the webserver
+  has sometimes returned `409 Conflict` errors for a while when polled
+  – the webserver itself still answered normally through its own web
+  interface during this time, so this appears to be a temporary
+  internal state on the device rather than an integration issue. Home
+  Assistant's built-in retry mechanism (`ConfigEntryNotReady`) will
+  keep retrying automatically (with a backoff capped at 10 minutes,
+  but never giving up entirely) until the webserver recovers on its
+  own, typically without needing to restart Home Assistant or
+  reconfigure the integration.
 
 Feedback on success or problems with other installations/firmware
 versions is very welcome via
