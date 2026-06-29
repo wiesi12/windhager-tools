@@ -66,19 +66,26 @@ only, no cloud access needed) and exposes their data as sensors.
 
 ### If you don't know the webserver password
 
-If you've used the **Windhager app** (myComfort or similar) to set
-up your system, it automatically changes the local webserver's
-password when connecting – and never shows it to you in plain text.
-In that case, the only way back in is a **factory reset of the
-webserver** (reset button on the device, usually held for >10
-seconds, see your device's manual), which restores the default
-username/password.
+If you've previously set up the **Windhager app** (myComfort/Windhager
+Connect) with your system, it may have changed the local webserver's
+password during that initial pairing process, without ever showing
+it to you in plain text. In that case, two options to get back in:
 
-**Important:** After a factory reset, the Windhager app generally
-won't work with this device anymore, since its setup process would
-change the password again – you effectively have to choose between
-"app access" and "local API access (e.g. for this integration)",
-not both at the same time.
+- If you have access to the [Windhager Connect](https://connect.windhager.com)
+  web portal (same login as the app), there may be a "Change webserver
+  password" option under your system's settings that lets you reset
+  it to the default (`123`) directly – this didn't appear to be
+  available on every account/system in informal testing, so YMMV.
+- Otherwise, a **factory reset of the webserver** (reset button on
+  the device, usually held for >10 seconds, see your device's manual)
+  restores the default username/password.
+
+Note that the app reconnecting to your system afterwards does **not**
+necessarily mean it changed the password again – in practice, the
+password only seems to get changed during the *initial* pairing, not
+on every reconnect. So app and local API access aren't necessarily
+mutually exclusive in the long run, though this hasn't been tested
+thoroughly across different firmware versions.
 
 ## Compatibility
 
