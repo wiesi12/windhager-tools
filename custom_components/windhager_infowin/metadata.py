@@ -278,17 +278,6 @@ def suggested_precision(entry):
     return None
 
 
-def suggested_precision(entry):
-
-    if entry.unit == "°C":
-        return 1
-
-    if entry.unit == "%":
-        return 0
-
-    return None
-
-
 def has_numeric_value(entry, live_value=None):
     """Pruefen, ob der aktuelle Wert tatsaechlich eine Zahl ist.
 
