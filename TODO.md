@@ -53,9 +53,11 @@
 - [x] Host
 - [x] Username
 - [x] Password (masked input)
-- [ ] Select discovered modules
-- [ ] Select sensor groups
-- [ ] Reconfigure options (e.g. poll intervals)
+- [x] Select discovered modules
+- [x] Select sensor groups (per module, after module selection)
+- [x] Connection errors surfaced directly in the form
+- [ ] Reconfigure options (e.g. poll intervals, changing module/group
+      selection after initial setup)
 
 ### Sensor
 
@@ -91,8 +93,12 @@
 - [x] Dark mode variants
 - [x] manifest.json complete (issue_tracker, version, etc.)
 - [x] hacs.json
-- [x] Non-blocking NV first refresh (background task)
+- [x] Conditional NV first refresh (blocking only on the very first
+      setup, so entity_category is evaluated correctly; background
+      task on every subsequent restart for faster startup)
 - [x] config_entry passed to coordinators
+- [x] Eliminated build_integration.py / vendor/ copy step (lib/ moved
+      directly into the integration with relative imports)
 
 ---
 
@@ -110,19 +116,22 @@
 ## Release / Project
 
 - [x] Localization (entity names: de/en/fr/it)
-- [x] README documentation
+- [x] README documentation (English)
 - [x] LICENSE (MIT)
 - [x] Remove credentials from git history
-- [x] First HACS-compatible release (v0.1.0)
+- [x] First HACS-compatible release (v0.1.1, after v0.1.0 turned out
+      to predate the HACS-compliance fixes)
+- [x] Module/sensor-group selection feature released (v0.2.0)
 - [ ] Unit tests
 - [ ] Submit to HACS default store (after some real-world testing)
-- [ ] Community forum post to find testers for other firmware/hardware generations
+- [x] Community forum post to find testers for other firmware/hardware
+      generations (posted 2026-06-29 in Custom Integrations category,
+      pending moderator approval as a new account)
 
 ## Future
 
 - [ ] Write support (temperature setpoints, modes)
-- [ ] Config-flow options for selecting which modules/sensors to expose
-- [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver)
+- [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver) - considered and rejected for now (2026-06-29), risk to the heating controller not worth the time saved on a one-time setup step
 - [ ] Refine NV group selection: currently a single "NV's" checkbox
       covers all ~200 NV entries per module (e.g. BioWIN) - too coarse
       for meaningful filtering. Individual per-NV selection isn't
