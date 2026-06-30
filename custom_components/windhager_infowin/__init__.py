@@ -11,6 +11,7 @@ from .lib import (
     WindhagerSystem,
 )
 
+from . import metadata
 from .const import DOMAIN
 from .coordinator import (
     WindhagerCoordinator,
@@ -189,7 +190,12 @@ async def async_setup_entry(
 
         entry.async_create_background_task(
             hass,
-            nv_coordinator.async_refresh(),
+            _refresh_then_reconcile(
+                hass,
+                entry,
+                system,
+                nv_coordinator,
+            ),
             name=f"{DOMAIN}_nv_first_refresh",
         )
 
@@ -223,12 +229,160 @@ async def async_setup_entry(
         ["sensor"],
     )
 
+    if not existing_nv_entities:
+
+        # NUR im blockierenden Pfad hier direkt aufrufen - im
+        # Hintergrund-Pfad uebernimmt das bereits
+        # _refresh_then_reconcile() oben, NACHDEM der Hintergrund-
+        # Refresh tatsaechlich fertig ist (siehe dort fuer die
+        # Begruendung, warum ein direkter Aufruf hier im
+        # Hintergrund-Fall eine Race Condition waere).
+        await _reconcile_entity_categories(
+            hass,
+            entry,
+            system,
+            nv_coordinator,
+        )
+
     _LOGGER.debug(
         "Setup abgeschlossen in %.1fs insgesamt",
         time.monotonic() - setup_started_at,
     )
 
     return True
+
+
+async def _refresh_then_reconcile(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    system: WindhagerSystem,
+    nv_coordinator: WindhagerNvCoordinator,
+) -> None:
+    """Hintergrund-Task-Helfer: erst den NV-Refresh ABWARTEN, dann
+    erst _reconcile_entity_categories() aufrufen.
+
+    WICHTIG: existiert als eigene Funktion, damit beide Schritte
+    INNERHALB desselben Hintergrund-Tasks sequentiell laufen. Ein
+    direkter Aufruf von _reconcile_entity_categories() im normalen
+    async_setup_entry()-Ablauf (parallel zum per
+    entry.async_create_background_task() gestarteten Refresh) waere
+    eine Race Condition: nv_coordinator.data waere zu diesem
+    Zeitpunkt noch leer/veraltet, wodurch is_raw_hex_value() auf dem
+    statischen Katalog-Platzhalter ("-") statt dem echten Live-Wert
+    rechnen wuerde - also fast immer faelschlich "kein Hex-Wert".
+    """
+
+    await nv_coordinator.async_refresh()
+
+    await _reconcile_entity_categories(
+        hass,
+        entry,
+        system,
+        nv_coordinator,
+    )
+
+
+async def _reconcile_entity_categories(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    system: WindhagerSystem,
+    nv_coordinator: WindhagerNvCoordinator,
+) -> None:
+    """Die entity_category bestehender Sensoren mit dem aktuell
+    korrekten Wert abgleichen, statt sich auf das HA-Standard-
+    verhalten zu verlassen.
+
+    HA wertet entity_category (genauso wie suggested_object_id/name)
+    NUR beim ALLERERSTEN Hinzufuegen einer Entity zur Registry aus -
+    bei einem regulaeren Update/Neustart mit bereits existierender
+    unique_id behaelt eine Entity ihren alten, in der Registry
+    gespeicherten Wert bei, selbst wenn ein Integrations-Update die
+    zugrundeliegende Klassifizierungslogik (z.B.
+    metadata.is_raw_hex_value()) verbessert hat.
+
+    Das betrifft nicht nur Entwickler-Workflows: ein normales HACS-
+    Update (neue Dateien + Neustart, OHNE die Integration manuell neu
+    einzurichten) faellt genau in dieses Muster. Ohne diesen Abgleich
+    wuerden z.B. neu erkannte Hex-Bitfeld-Sensoren erst nach einem
+    manuellen Entfernen+Neueinrichten der Integration korrekt als
+    Diagnose-Entity einsortiert, was die meisten Nutzer nicht erwarten.
+
+    Schreibt die Registry NUR bei tatsaechlicher Abweichung (nicht bei
+    jedem Start blind alle Entities neu setzen) - HA raet explizit zu
+    Zurueckhaltung bei haeufigen entity_category-Aenderungen.
+    """
+
+    registry = er.async_get(hass)
+
+    nv_data = nv_coordinator.data or {}
+
+    updated_count = 0
+
+    for entity_entry in er.async_entries_for_config_entry(
+        registry,
+        entry.entry_id,
+    ):
+
+        unique_id = (
+            getattr(
+                entity_entry,
+                "unique_id",
+                "",
+            )
+            or ""
+        )
+
+        if not unique_id.startswith("windhager_v2_"):
+
+            # Sollte bei dieser Integration nie vorkommen (nur sie
+            # selbst registriert Entities mit diesem Domain), aber
+            # sicherheitshalber keine fremden Entities anfassen.
+            continue
+
+        oid = unique_id[
+            len("windhager_v2_"):
+        ]
+
+        info = system.oid_map.get(oid)
+
+        if info is None:
+            continue
+
+        # Fuer NV's den aktuellen Wert aus dem NV-Coordinator nehmen
+        # (falls schon vorhanden), sonst auf den statischen Katalog-
+        # Wert zurueckfallen - dasselbe Muster wie sensor.py's
+        # live_entry-Property.
+        live_entry = nv_data.get(oid)
+
+        live_value = (
+            live_entry.value
+            if live_entry is not None
+            else info["entry"].value
+        )
+
+        correct_category = metadata.entity_category(
+            info["lookup"],
+            info["entry"],
+            live_value,
+        )
+
+        if entity_entry.entity_category != correct_category:
+
+            registry.async_update_entity(
+                entity_entry.entity_id,
+                entity_category=correct_category,
+            )
+
+            updated_count += 1
+
+    if updated_count:
+
+        _LOGGER.info(
+            "entity_category fuer %d bestehende Sensoren "
+            "korrigiert (Klassifizierungslogik hat sich seit "
+            "deren erster Registrierung geaendert)",
+            updated_count,
+        )
 
 
 async def async_unload_entry(

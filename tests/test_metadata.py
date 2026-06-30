@@ -28,6 +28,7 @@ class FakeEntry:
         group=None,
         member=None,
         name="",
+        enum=None,
     ):
 
         self.value = value
@@ -35,6 +36,7 @@ class FakeEntry:
         self.group = group
         self.member = member
         self.name = name
+        self.enum = enum
 
 
 class FakeLookup:
@@ -394,3 +396,114 @@ def test_unit_translation_passes_through_unknown_units():
 def test_unit_translation_none_stays_none():
 
     assert metadata.translate_unit(None) is None
+
+
+def test_entry_enum_field_detected_without_text_translation():
+    """Regressionstest fuer die API-'enum'-Feld-basierte Erkennung
+    (2026-06-30): ein Eintrag mit entry.enum gesetzt soll als Enum
+    erkannt werden (numeric=False), auch OHNE passenden Eintrag in
+    enum_texts. Windhager nutzt mehrere typeId-Werte fuer Enums
+    (mindestens 0 und 9 beobachtet) - das API-eigene 'enum'-Feld ist
+    robuster als eine unvollstaendige typeId-Whitelist.
+    """
+
+    entry = FakeEntry(
+        value="0",
+        unit=None,
+        group=4,
+        member=13,
+        enum=[0, 1, 2],
+    )
+
+    assert (
+        metadata.is_enum_value(entry, "0", None)
+        is True
+    )
+    assert (
+        metadata.has_numeric_value(entry, "0", None)
+        is False
+    )
+    assert (
+        metadata.has_valid_value(entry, "0", None)
+        is True
+    )
+
+    # Ohne Text-Uebersetzung bleibt der Rohwert sichtbar
+    assert (
+        metadata.parsed_value(entry, "0", None)
+        == "0"
+    )
+
+
+def test_entry_enum_field_with_text_translation():
+    """entry.enum UND eine passende enum_texts-Uebersetzung
+    zusammen: der lesbare Text wird angezeigt.
+    """
+
+    entry = FakeEntry(
+        value="0",
+        unit=None,
+        group=4,
+        member=13,
+        enum=[0, 1, 2],
+    )
+
+    enum_texts = {(4, 13, 0): "senden"}
+
+    assert (
+        metadata.parsed_value(
+            entry,
+            "0",
+            enum_texts,
+        )
+        == "senden"
+    )
+
+
+def test_entry_enum_field_value_outside_known_range():
+    """Ein Wert, der NICHT in entry.enum steht (z.B. wegen eines
+    unerwarteten/neuen Anlagenzustands), soll NICHT faelschlich als
+    Enum behandelt werden - bleibt als normaler numerischer Wert.
+    """
+
+    entry = FakeEntry(
+        value="99",
+        unit=None,
+        group=4,
+        member=13,
+        enum=[0, 1, 2],
+    )
+
+    assert (
+        metadata.is_enum_value(entry, "99", None)
+        is False
+    )
+    assert (
+        metadata.has_numeric_value(entry, "99", None)
+        is True
+    )
+
+
+def test_no_entry_enum_field_is_not_treated_as_enum():
+    """Normale numerische Werte (kein entry.enum gesetzt) bleiben
+    unveraendert numerisch - keine Regression durch das neue Feature.
+    """
+
+    entry = FakeEntry(
+        value="65.3",
+        unit="°C",
+        enum=None,
+    )
+
+    assert (
+        metadata.is_enum_value(entry, "65.3", None)
+        is False
+    )
+    assert (
+        metadata.has_numeric_value(
+            entry,
+            "65.3",
+            None,
+        )
+        is True
+    )

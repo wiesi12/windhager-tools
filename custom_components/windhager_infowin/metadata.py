@@ -291,21 +291,25 @@ def suggested_precision(entry):
 
 
 def is_enum_value(entry, live_value=None, enum_texts=None):
-    """Pruefen, ob fuer den AKTUELLEN Wert dieses Entries eine
-    Enum-Text-Uebersetzung existiert (siehe parsed_value() fuer die
-    eigentliche Uebersetzung - diese Funktion nur fuer die ja/nein-
-    Entscheidung, ob "dieser Wert sollte als Enum/Text behandelt
-    werden", die has_numeric_value() braucht).
-    """
+    """Pruefen, ob dieser Eintrag (anhand seines AKTUELLEN Werts) als
+    Enum behandelt werden soll - entweder weil eine lesbare Text-
+    Uebersetzung existiert (enum_texts, siehe parsed_value()), ODER
+    weil die API selbst ein "enum"-Feld mit den gueltigen Werten
+    mitliefert (entry.enum, siehe reader._parse_enum_field()).
 
-    if not enum_texts:
-        return False
+    Der zweite Weg ist bewusst UNABHAENGIG vom ersten: Windhager nutzt
+    mehrere verschiedene typeId-Werte fuer Enums (mindestens 0 und 9
+    wurden beobachtet) - statt eine typeId-Whitelist zu pflegen, die
+    mit den verfuegbaren Stichproben nicht zuverlaessig vollstaendig
+    ist, verlassen wir uns auf das von der API selbst gelieferte
+    "enum"-Feld. Das erkennt Enum-Werte auch dann korrekt (zumindest
+    als "kein Messwert", auch ohne lesbaren Text), wenn fuer die
+    jeweilige (group, member, value)-Kombination keine Uebersetzung
+    in AufzaehlTexte existiert.
+    """
 
     group = getattr(entry, "group", None)
     member = getattr(entry, "member", None)
-
-    if group is None or member is None:
-        return False
 
     value = entry.value if live_value is None else live_value
 
@@ -315,6 +319,21 @@ def is_enum_value(entry, live_value=None, enum_texts=None):
 
     except (ValueError, TypeError):
 
+        return False
+
+    entry_enum_values = getattr(
+        entry,
+        "enum",
+        None,
+    )
+
+    if entry_enum_values and enum_value in entry_enum_values:
+        return True
+
+    if not enum_texts:
+        return False
+
+    if group is None or member is None:
         return False
 
     return (

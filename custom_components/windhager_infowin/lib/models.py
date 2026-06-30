@@ -63,6 +63,16 @@ class Entry:
 
     timestamp: str | None = None
 
+    # Liste der gueltigen Enum-Werte, falls von der API geliefert
+    # (z.B. [0, 1, 2, 3, 4, 5] fuer "Betriebswahl"). Direkter, vom
+    # typeId UNABHAENGIGER Marker dafuer, dass dieser Eintrag ein
+    # Enum ist - Windhager nutzt mehrere verschiedene typeId-Werte
+    # fuer Enums (mindestens 0 und 9 wurden beobachtet), eine
+    # vollstaendige typeId-Liste ist mit den verfuegbaren Stichproben
+    # nicht zuverlaessig zu pflegen. None bedeutet "kein Enum laut API"
+    # (das Feld fehlt schlicht in der Response).
+    enum: list[int] | None = None
+
     name: str = ""
 
     @property

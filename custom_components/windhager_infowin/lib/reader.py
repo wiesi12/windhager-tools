@@ -1,8 +1,41 @@
 from .models import Entry, NvEntry
 
+import json
 import logging
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _parse_enum_field(raw_enum):
+    """Das "enum"-Feld der API parsen (z.B. "[0,1,2,3,4,5]" als
+    String, nicht als echtes JSON-Array innerhalb des umgebenden
+    JSON-Objekts - Windhager liefert es offenbar als Text).
+
+    Liefert None bei fehlendem/leerem/unparsbarem Wert, statt eine
+    Exception zu werfen - ein nicht erkennbares enum-Feld soll den
+    gesamten Poll nicht zum Absturz bringen, sondern nur dazu fuehren,
+    dass dieser eine Eintrag wie ein normaler (Nicht-Enum-)Wert
+    behandelt wird.
+    """
+
+    if not raw_enum:
+        return None
+
+    try:
+
+        parsed = json.loads(raw_enum)
+
+    except (
+        json.JSONDecodeError,
+        TypeError,
+    ):
+
+        return None
+
+    if not isinstance(parsed, list):
+        return None
+
+    return parsed
 
 
 def read_lookup(client, module, function, lookup, fetch_nv_values=False):
@@ -54,6 +87,10 @@ def read_lookup(client, module, function, lookup, fetch_nv_values=False):
                     step_id=item.get("stepId"),
 
                     timestamp=item.get("timestamp"),
+
+                    enum=_parse_enum_field(
+                        item.get("enum")
+                    ),
 
                     write_protected=item.get("writeProt"),
 

@@ -171,6 +171,8 @@ def load_catalog(filename):
 
                             timestamp=entry_data.get("timestamp"),
 
+                            enum=entry_data.get("enum"),
+
                             name=entry_data.get("name", ""),
                         )
 
