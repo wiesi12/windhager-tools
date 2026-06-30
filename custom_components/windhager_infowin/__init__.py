@@ -437,13 +437,12 @@ async def _reconcile_entities(
             removed_count += 1
             continue
 
-        # Domain-Wechsel pruefen: wenn die Entity als 'sensor'
-        # registriert ist, aber jetzt als 'select' oder 'number'
-        # erzeugt werden wuerde (z.B. durch nachtraeglich
-        # eingefuehrten Write-Support), den alten Eintrag entfernen.
-        if entity_entry.domain != "sensor":
-            continue
-
+        # Domain-Wechsel pruefen: wenn eine Entity in der falschen
+        # Domain registriert ist (z.B. alter 'sensor' fuer eine OID
+        # die jetzt als 'select'/'number' erzeugt werden wuerde, oder
+        # umgekehrt ein alter 'number' fuer eine OID die jetzt als
+        # 'sensor' landet), den alten Eintrag entfernen damit HA die
+        # Entity in der richtigen Domain neu anlegen kann.
         info = system.oid_map[oid]
         entry_obj = info["entry"]
 
@@ -458,9 +457,6 @@ async def _reconcile_entities(
             True,
         )
 
-        if not is_writable:
-            continue
-
         has_enum = bool(
             getattr(
                 entry_obj,
@@ -472,10 +468,24 @@ async def _reconcile_entities(
         has_numeric_range = (
             entry_obj.min_value is not None
             and entry_obj.max_value is not None
+            and entry_obj.min_value != entry_obj.max_value
             and not has_enum
+            and getattr(entry_obj, "unit_id", None) not in (
+                0,
+                20,
+                21,
+            )
         )
 
-        if has_enum or has_numeric_range:
+        # Die korrekte Domain fuer diese OID bestimmen:
+        if is_writable and has_enum:
+            correct_domain = "select"
+        elif is_writable and has_numeric_range:
+            correct_domain = "number"
+        else:
+            correct_domain = "sensor"
+
+        if entity_entry.domain != correct_domain:
 
             registry.async_remove(
                 entity_entry.entity_id

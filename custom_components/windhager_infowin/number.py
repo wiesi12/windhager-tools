@@ -32,9 +32,18 @@ async def async_setup_entry(
         )
         for oid in coordinator.data
         # Nur schreibbare, NICHT-NV-Entries mit einem numerischen
-        # Wert (also minValue/maxValue/step sind gesetzt, kein
-        # Enum-Feld). NV-Entries haben kein write_protected-Attribut
-        # und kein minValue/maxValue - die landen immer als Sensor.
+        # Wert (also minValue/maxValue sind gesetzt, kein Enum-Feld).
+        # NV-Entries haben kein write_protected-Attribut und kein
+        # minValue/maxValue - die landen immer als Sensor.
+        #
+        # WICHTIG: min_value != max_value als zusaetzliches Kriterium:
+        # die Windhager-API markiert auch reine Messwerte (z.B.
+        # "Raumtemperatur Aktueller Wert") als writeProt: false, aber
+        # mit min_value == max_value == 0.0 - ein sinnloser
+        # Schreibbereich, der signalisiert, dass dieser Wert
+        # konzeptuell nicht schreibbar ist. Echte Sollwerte haben
+        # immer einen sinnvollen, nicht-trivialen Bereich
+        # (z.B. 10.0 - 30.0 fuer Raumtemperatur-Sollwert).
         if not oid.startswith("nv:")
         and system.oid_map.get(oid) is not None
         and not getattr(
@@ -44,10 +53,25 @@ async def async_setup_entry(
         )
         and system.oid_map[oid]["entry"].min_value is not None
         and system.oid_map[oid]["entry"].max_value is not None
+        and system.oid_map[oid]["entry"].min_value
+        != system.oid_map[oid]["entry"].max_value
         and not getattr(
             system.oid_map[oid]["entry"],
             "enum",
             None,
+        )
+        # unit_id=0 (dimensionslos/None) und unit_id=20/21
+        # (Datum/Zeit) ausschliessen: diese Entries sind zwar
+        # technisch schreibbar (writeProt: false), aber konzeptuell
+        # keine echten Sollwerte fuer Endnutzer - z.B.
+        # LON-Systemdaten (interne LON-Koordination), Modulfunktionen
+        # (Konfigurationsparameter), Ferienprogramm-Datum,
+        # Uhrzeit/Datum-Eintraege. Echte numerische Sollwerte haben
+        # immer eine physikalische Einheit (°C, K, min, d, etc.).
+        and system.oid_map[oid]["entry"].unit_id not in (
+            0,
+            20,
+            21,
         )
     ]
 

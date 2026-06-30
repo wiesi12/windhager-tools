@@ -36,11 +36,49 @@ async def async_setup_entry(
         # Entity (nicht als read-only Sensor) - kein Duplikat.
         # NV-Entries haben kein write_protected-Attribut und landen
         # immer als Sensor.
-        if oid.startswith("nv:") or system.oid_map.get(oid, {}).get("entry") is None
+        #
+        # AUSNAHME: Entries mit write_protected: false aber
+        # min_value == max_value (z.B. "Raumtemperatur Aktueller Wert"
+        # mit min=max=0.0) sind konzeptuell Messwerte - sie landen
+        # als Sensor, nicht als number.
+        if oid.startswith("nv:")
+        or system.oid_map.get(oid, {}).get("entry") is None
         or getattr(
             system.oid_map[oid]["entry"],
             "write_protected",
             True,
+        )
+        or (
+            not getattr(
+                system.oid_map[oid]["entry"],
+                "enum",
+                None,
+            )
+            and system.oid_map[oid]["entry"].min_value is not None
+            and system.oid_map[oid]["entry"].max_value is not None
+            and system.oid_map[oid]["entry"].min_value
+            == system.oid_map[oid]["entry"].max_value
+        )
+        or (
+            not getattr(
+                system.oid_map[oid]["entry"],
+                "enum",
+                None,
+            )
+            and not getattr(
+                system.oid_map[oid]["entry"],
+                "write_protected",
+                True,
+            )
+            and system.oid_map[oid]["entry"].min_value is not None
+            and system.oid_map[oid]["entry"].max_value is not None
+            and system.oid_map[oid]["entry"].min_value
+            != system.oid_map[oid]["entry"].max_value
+            and getattr(
+                system.oid_map[oid]["entry"],
+                "unit_id",
+                None,
+            ) in (0, 20, 21)
         )
     ]
 
