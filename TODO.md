@@ -17,8 +17,21 @@
 
 - [x] Complete Entry model
 - [x] NvEntry model
-- [ ] Typed value helpers
-- [ ] Enum helper methods
+- [x] Typed value helpers (covered pragmatically via
+      metadata.parsed_value()/has_numeric_value()/has_valid_value() in
+      the HA integration layer rather than as methods on Entry itself)
+- [ ] Enum helper methods - real, concrete opportunity found
+      2026-06-29: Windhager exposes a fourth resource file alongside
+      EbenenTexte/VarIdentTexte/AufzaehlTexte at
+      /res/xml/AufzaehlTexte_<lang>.xml, addressed by the SAME
+      (group, member) scheme as VarIdentTexte (confirmed: gn id="3"/
+      mn id="9" contains enum id="0"-"16" = "Standby"/"Heizbetrieb"/
+      etc., matching the raw "0"/"1" we currently show for e.g.
+      "Betriebswahl" sensors). Would let sensors show "Standby"
+      instead of "0". Not implemented yet - real feature, needs
+      loading the new resource, mapping it onto entries during crawl
+      (similar to how entry_name() works in resources.py today), and
+      testing - not something to rush at the end of a long session.
 
 ### Catalog
 
@@ -26,15 +39,41 @@
 - [x] Load catalog
 - [x] Per-language catalog caching
 - [x] Store catalog inside the integration directory (persistent_directory)
-- [ ] Catalog versioning / schema migration
+- [x] Catalog versioning / schema migration - solved pragmatically
+      2026-06-29: rather than a full migration system, load_catalog()
+      failures (corrupt JSON, missing fields after a data model
+      change) are now caught, the stale catalog file is deleted, and
+      a fresh discovery crawl runs automatically - same recovery path
+      as a missing catalog, just triggered by a broken one too.
 
 ### Diagnostics
 
 - [x] Statistics
 - [x] Validation
-- [ ] Unknown type report
-- [ ] Unknown unit report
-- [ ] Unknown subtype report
+- [ ] Unknown type report / Unknown unit report / Unknown subtype
+      report - originally vague TODO holdovers, but turned out to
+      point at something real: the lookup API returns numeric
+      `typeId`/`unitId`/`subtypeId` fields per entry that we already
+      read and store (Entry.type_id/unit_id/subtype_id) but never
+      actually use anywhere. Confirmed via live API responses
+      2026-06-30:
+        - typeId 9 = enum value (response also includes an `enum`
+          field, e.g. "[0,1,2,3,4,5]", listing the valid raw values -
+          and notably, NO `unit` field in this case)
+        - typeId 13 = numeric value with a unit (response includes
+          `unit`/`unitId`/`minValue`/`maxValue`/`step`, e.g.
+          unitId 1 = "°C" - and no `enum` field)
+      typeId looks like a much more reliable way to distinguish
+      "this is an enum" vs. "this is a plain number" than our current
+      approach (guessing from entry.unit being a known string or
+      None). Could also replace/supplement the hardcoded
+      DEVICE_CLASSES unit-string mapping in metadata.py with a
+      unitId-based one, which wouldn't depend on Windhager's unit
+      text staying consistent. Worth a closer look, but a real
+      refactor (touches classify()/device_class()/has_numeric_value()
+      and the catalog schema), not a quick change - and ties in
+      directly with the enum-helper-methods idea above (typeId == 9
+      would be the trigger for looking up the AufzaehlTexte mapping).
 - [ ] Firmware capability report
 
 ### Polling
@@ -92,16 +131,40 @@
 
 ### Number / Select
 
-- [ ] Read/write values
-- [ ] Min / Max / Step
-- [ ] Lookup enums
-- [ ] Write support
+- [ ] Add `number`/`select` entity platforms for writable values (see
+      "Write support" under Future for the confirmed API details -
+      write endpoint, payload format, and the typeId-based
+      enum/numeric distinction found while investigating this).
+      Originally four separate bullet points here (read/write values,
+      min/max/step, lookup enums, write support) - consolidated since
+      they're really one feature and the details belong in one place
+      instead of being duplicated.
 
 ### Devices
 
 - [x] Basic device per module
-- [ ] Better device hierarchy
-- [ ] Function-level devices
+- [ ] Better device hierarchy - precise idea 2026-06-30 (after
+      rejecting function-level devices above): use HA's `via_device`
+      in DeviceInfo to mark HK1/HK2/HK3 as connected through BioWIN
+      (the actual boiler the heating circuits draw heat from). Purely
+      visual/navigational in the HA device list (shows "via [device]"
+      linkage) - doesn't create any new entities or devices, so none
+      of the downsides of function-level devices apply. Would need to
+      figure out which module is "the boiler" generically (not
+      hardcoded to "BioWIN" specifically, since other installations
+      will have different module names) - maybe by module type/fctType
+      pattern rather than name matching.
+- [x] ~~Function-level devices~~ - considered and rejected 2026-06-30:
+      would mean one HA device per lookup group (e.g. separate
+      devices for "Betriebswahl", "Auslegungstemperaturen", etc.
+      instead of one device per module). For HK1-3 (which have ~20
+      lookup groups each) this would balloon the device list from 4
+      devices to 60-80+, hurting overview rather than helping it.
+      The one module that's actually a single giant group (BioWIN,
+      just "NV's" with ~200 entries) wouldn't even benefit, since
+      there's nothing to split there. Current per-module device with
+      group-prefixed sensor names (e.g. "HK1 OG1/2 Betriebswahl ...")
+      already gives the grouping without the device list explosion.
 
 ### Branding / Packaging
 
@@ -124,8 +187,18 @@
 - [ ] MES PLUS (older, non-Touch) - untested, likely compatible
 - [ ] Newer firmware / comWinStack API - likely NOT compatible, untested
 - [ ] Multiple firmware versions / automatic capability detection
-- [ ] Missing XML entries handling
-- [ ] Unknown modules handling
+- [x] Missing XML entries handling - already covered: lookup_name()/
+      entry_name() in resources.py both fall back to an empty string
+      rather than raising, so missing translations don't crash
+      discovery (just show a blank/raw name instead). Was implicit
+      in how the naming pipeline was built rather than a deliberate
+      separate effort, but the behavior is there.
+- [ ] Unknown modules handling - discovery code itself is fully
+      generic (parses whatever the API returns, no module-type-
+      specific assumptions), so it should handle module types this
+      integration has never seen (solar, heat pump, etc.) without
+      changes - but this has only ever run against this integration's
+      one test installation, so it's unverified in practice.
 
 ---
 
@@ -158,6 +231,14 @@
       `ws.writeDP.req.xml` resources under `/res/xml/` are SOAP and
       NOT what the current web interface actually uses - ignore them,
       they're apparently a leftover from an older API generation.
+      Writable lookup responses also already include `minValue`,
+      `maxValue`, `step`/`stepId`, and `writeProt` (confirmed
+      2026-06-30 via live lookup responses for room temperature
+      setpoints - e.g. minValue "10.0", maxValue "30.0", step "0.5")
+      - everything needed to build proper `number` entities with
+      correct bounds, without having to guess or hardcode them. See
+      the typeId entry above for how to tell enum vs. numeric values
+      apart (`select` vs. `number` entities).
 - [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver) - considered and rejected for now (2026-06-29), risk to the heating controller not worth the time saved on a one-time setup step
 - [ ] Refine NV group selection: currently a single "NV's" checkbox
       covers all ~200 NV entries per module (e.g. BioWIN) - too coarse

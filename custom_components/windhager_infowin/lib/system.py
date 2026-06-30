@@ -96,15 +96,43 @@ class WindhagerSystem:
 
     def initialize(self):
 
+        all_modules = None
+
         if self.catalog_path.exists():
 
             print("Lade Katalog...")
 
-            all_modules = load_catalog(
-                self.catalog_path
-            )
+            try:
 
-        else:
+                all_modules = load_catalog(
+                    self.catalog_path
+                )
+
+            except Exception as error:  # noqa: BLE001 - bewusst breit,
+
+                # da load_catalog() je nach Korruptionsart ganz
+                # unterschiedliche Fehler werfen kann (KeyError bei
+                # fehlenden Feldern, json.JSONDecodeError bei kaputter
+                # Datei, etc.). In JEDEM Fall ist die pragmatische,
+                # sichere Reaktion dieselbe: den unbrauchbaren Katalog
+                # verwerfen und neu crawlen, statt die gesamte
+                # Integration mit einem Crash zu blockieren. Das deckt
+                # insbesondere den Fall ab, dass sich unser eigenes
+                # Datenmodell (Module/Function/Lookup/Entry) zwischen
+                # zwei Versionen dieser Integration geaendert hat und
+                # ein aelterer, gespeicherter Katalog nicht mehr zum
+                # aktuellen Code passt.
+
+                print(
+                    f"Katalog beschaedigt oder inkompatibel "
+                    f"({error}) - lösche und crawle neu..."
+                )
+
+                self.catalog_path.unlink(
+                    missing_ok=True,
+                )
+
+        if all_modules is None:
 
             print("Starte Discovery...")
 
