@@ -110,17 +110,33 @@
 - [x] Select discovered modules
 - [x] Select sensor groups (per module, after module selection)
 - [x] Connection errors surfaced directly in the form
-- [ ] Reconfigure options (e.g. poll intervals, changing module/group
-      selection after initial setup). Idea from 2026-06-29: show the
-      CURRENT/live sensor value next to each module/group checkbox
-      when reconfiguring (not during initial setup) - the coordinator
-      is already running with real data at that point, so this is
-      free (no extra API calls), unlike trying to preview values
-      during the initial config flow, which would need a full extra
-      polling round-trip before the user can even see the checkboxes
-      (considered and rejected for the initial setup specifically -
-      doubles the wait time for not much benefit, since the user
-      hasn't seen anything yet anyway at that point).
+- [x] Reconfigure options (implemented 2026-06-30, via
+      Settings -> Devices & Services -> Windhager InfoWIN ->
+      Configure) - module/sensor-group selection can now be changed
+      after initial setup without removing and re-adding the
+      integration. Shows the current/live sensor value next to each
+      checkbox where available (free, since the coordinator is
+      already running - unlike the initial setup flow, where a values
+      preview would need a full extra polling round-trip).
+      Uncovered and fixed three real issues through live testing
+      along the way:
+        - Triggering the reload reliably: OptionsFlowWithReload's
+          change-detection only fired consistently once
+          async_create_entry() received a guaranteed-different value
+          (a timestamp) instead of an empty dict - the actual config
+          change happens separately via async_update_entry() on
+          entry.data, which the built-in detection apparently doesn't
+          see. A direct async_reload() call from inside the flow
+          handler caused a silent hang (likely a deadlock); an
+          update_listener is deprecated as of HA 2026.6 when combined
+          with a flow's own reloading methods.
+        - Stale devices: HA doesn't auto-remove devices an integration
+          stops creating between setup runs - added
+          _reconcile_devices() in __init__.py.
+        - Stale entities: same problem one level down (a module stays
+          selected but individual sensor groups under it get
+          deselected) - added _reconcile_entities(), verified live
+          removing 17/19/2 stale sensors across separate test runs.
 
 ### Sensor
 
