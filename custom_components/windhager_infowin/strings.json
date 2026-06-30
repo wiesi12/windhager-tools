@@ -28,5 +28,23 @@
         "error": {
             "cannot_connect": "Could not connect to the Windhager webserver. Please check the host, username, and password."
         }
+    },
+    "options": {
+        "step": {
+            "select_modules": {
+                "title": "Select modules",
+                "description": "Choose which modules of your heating system should be set up. Modules you don't select won't be polled. Changes take effect immediately after saving (the integration reloads automatically).",
+                "data": {
+                    "modules": "Modules"
+                }
+            },
+            "select_groups": {
+                "title": "Select sensor groups for {module_name}",
+                "description": "Choose which sensor groups of \"{module_name}\" should be created. Currently reported values are shown next to each option where available.",
+                "data": {
+                    "groups": "Sensor groups"
+                }
+            }
+        }
     }
 }

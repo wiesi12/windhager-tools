@@ -28,5 +28,23 @@
         "error": {
             "cannot_connect": "Impossibile connettersi al server web Windhager. Verifica host, nome utente e password."
         }
+    },
+    "options": {
+        "step": {
+            "select_modules": {
+                "title": "Seleziona i moduli",
+                "description": "Scegli quali moduli del tuo impianto di riscaldamento devono essere configurati. I moduli non selezionati non verranno interrogati. Le modifiche hanno effetto immediato dopo il salvataggio (l'integrazione si ricarica automaticamente).",
+                "data": {
+                    "modules": "Moduli"
+                }
+            },
+            "select_groups": {
+                "title": "Seleziona i gruppi di sensori per {module_name}",
+                "description": "Scegli quali gruppi di sensori di \"{module_name}\" devono essere creati. I valori attualmente segnalati sono mostrati accanto a ciascuna opzione, se disponibili.",
+                "data": {
+                    "groups": "Gruppi di sensori"
+                }
+            }
+        }
     }
 }

@@ -28,5 +28,23 @@
         "error": {
             "cannot_connect": "Impossible de se connecter au serveur web Windhager. Veuillez vérifier l'hôte, le nom d'utilisateur et le mot de passe."
         }
+    },
+    "options": {
+        "step": {
+            "select_modules": {
+                "title": "Sélectionner les modules",
+                "description": "Choisissez les modules de votre système de chauffage à configurer. Les modules non sélectionnés ne seront pas interrogés. Les modifications prennent effet immédiatement après l'enregistrement (l'intégration se recharge automatiquement).",
+                "data": {
+                    "modules": "Modules"
+                }
+            },
+            "select_groups": {
+                "title": "Sélectionner les groupes de capteurs pour {module_name}",
+                "description": "Choisissez les groupes de capteurs de \"{module_name}\" à créer. Les valeurs actuellement rapportées sont affichées à côté de chaque option lorsqu'elles sont disponibles.",
+                "data": {
+                    "groups": "Groupes de capteurs"
+                }
+            }
+        }
     }
 }

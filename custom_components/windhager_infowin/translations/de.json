@@ -28,5 +28,23 @@
         "error": {
             "cannot_connect": "Verbindung zum Windhager-Webserver fehlgeschlagen. Bitte Host, Benutzername und Passwort überprüfen."
         }
+    },
+    "options": {
+        "step": {
+            "select_modules": {
+                "title": "Module auswählen",
+                "description": "Wähle aus, welche Module deiner Heizungsanlage eingerichtet werden sollen. Nicht ausgewählte Module werden nicht abgefragt. Änderungen werden nach dem Speichern sofort wirksam (die Integration wird automatisch neu geladen).",
+                "data": {
+                    "modules": "Module"
+                }
+            },
+            "select_groups": {
+                "title": "Sensor-Gruppen für {module_name} auswählen",
+                "description": "Wähle aus, welche Sensor-Gruppen von \"{module_name}\" angelegt werden sollen. Aktuell gemeldete Werte werden, falls verfügbar, neben den jeweiligen Optionen angezeigt.",
+                "data": {
+                    "groups": "Sensor-Gruppen"
+                }
+            }
+        }
     }
 }
