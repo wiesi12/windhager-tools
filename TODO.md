@@ -20,18 +20,19 @@
 - [x] Typed value helpers (covered pragmatically via
       metadata.parsed_value()/has_numeric_value()/has_valid_value() in
       the HA integration layer rather than as methods on Entry itself)
-- [ ] Enum helper methods - real, concrete opportunity found
-      2026-06-29: Windhager exposes a fourth resource file alongside
-      EbenenTexte/VarIdentTexte/AufzaehlTexte at
-      /res/xml/AufzaehlTexte_<lang>.xml, addressed by the SAME
-      (group, member) scheme as VarIdentTexte (confirmed: gn id="3"/
-      mn id="9" contains enum id="0"-"16" = "Standby"/"Heizbetrieb"/
-      etc., matching the raw "0"/"1" we currently show for e.g.
-      "Betriebswahl" sensors). Would let sensors show "Standby"
-      instead of "0". Not implemented yet - real feature, needs
-      loading the new resource, mapping it onto entries during crawl
-      (similar to how entry_name() works in resources.py today), and
-      testing - not something to rush at the end of a long session.
+- [x] Enum helper methods - implemented 2026-06-30. Windhager exposes
+      a fourth resource file alongside EbenenTexte/VarIdentTexte at
+      /res/xml/AufzaehlTexte_<lang>.xml, addressed by (group, member,
+      enum_value) - one level more specific than VarIdentTexte's
+      (group, member). Loaded in resources.py, stored as part of the
+      catalog (format changed to {modules, enum_texts}, old catalogs
+      without enum_texts still load fine). metadata.parsed_value()
+      returns the readable text instead of the raw value when a
+      translation exists, and has_numeric_value()/state_class()
+      correctly treat such values as non-numeric (a status code isn't
+      a measurement). Verified live: HK1 Betriebswahl shows "Standby",
+      HK2 shows "Heizprogramm 1" - different, genuinely current
+      per-circuit values, not a coincidence.
 
 ### Catalog
 
