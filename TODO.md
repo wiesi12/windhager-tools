@@ -236,7 +236,13 @@
 - [x] First HACS-compatible release (v0.1.1, after v0.1.0 turned out
       to predate the HACS-compliance fixes)
 - [x] Module/sensor-group selection feature released (v0.2.0)
-- [ ] Unit tests
+- [x] Unit tests - 41 tests added 2026-06-30 (test_resources.py,
+      test_metadata.py, test_catalog.py, test_system.py), focused on
+      the most non-trivial logic and the bugs found during this
+      project's development (fcttyp lookup-name collisions, hex value
+      diagnostic classification, enum translation, catalog error
+      recovery). Runs without a full Home Assistant install via a
+      minimal mock in conftest.py.
 - [ ] Submit to HACS default store (after some real-world testing)
 - [x] Community forum post to find testers for other firmware/hardware
       generations (posted 2026-06-29 in Custom Integrations category,
