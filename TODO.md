@@ -51,30 +51,37 @@
 
 - [x] Statistics
 - [x] Validation
-- [ ] Unknown type report / Unknown unit report / Unknown subtype
-      report - originally vague TODO holdovers, but turned out to
-      point at something real: the lookup API returns numeric
-      `typeId`/`unitId`/`subtypeId` fields per entry that we already
-      read and store (Entry.type_id/unit_id/subtype_id) but never
-      actually use anywhere. Confirmed via live API responses
-      2026-06-30:
-        - typeId 9 = enum value (response also includes an `enum`
-          field, e.g. "[0,1,2,3,4,5]", listing the valid raw values -
-          and notably, NO `unit` field in this case)
-        - typeId 13 = numeric value with a unit (response includes
-          `unit`/`unitId`/`minValue`/`maxValue`/`step`, e.g.
-          unitId 1 = "°C" - and no `enum` field)
-      typeId looks like a much more reliable way to distinguish
-      "this is an enum" vs. "this is a plain number" than our current
-      approach (guessing from entry.unit being a known string or
-      None). Could also replace/supplement the hardcoded
-      DEVICE_CLASSES unit-string mapping in metadata.py with a
-      unitId-based one, which wouldn't depend on Windhager's unit
-      text staying consistent. Worth a closer look, but a real
-      refactor (touches classify()/device_class()/has_numeric_value()
-      and the catalog schema), not a quick change - and ties in
-      directly with the enum-helper-methods idea above (typeId == 9
-      would be the trigger for looking up the AufzaehlTexte mapping).
+- [x] Unknown type report / Unknown unit report / Unknown subtype
+      report - originally vague TODO holdovers, investigated
+      2026-06-30. Findings:
+        - typeId is NOT a reliable single-value enum marker as
+          initially hoped - Windhager uses at least TWO different
+          typeId values for enums (0 for small enums like
+          "senden/verwenden/lokale TA", 9 for larger ones like
+          Betriebswahl), so a small typeId whitelist would have been
+          incomplete and fragile with only a handful of observed
+          samples.
+        - typeId 4 = date/time (distinguished via unitId 20/21,
+          matching what entry.unit already does)
+        - typeId 13 = numeric value with a unit
+        - NV entries (NvEntry) don't have typeId at all - they use a
+          completely separate type system via snvtName (SNVT_count,
+          SNVT_temp_p, SNVT_obj_status, etc.). snvtIndex=0 with no
+          snvtName correlates with the known hex/bitfield values
+          (PMX_Status, GB_m, etc.) - the existing is_raw_hex_value()
+          text-based check already handles this correctly in
+          practice.
+      Implemented instead: Entry now carries the API's own "enum"
+      field directly (the list of valid values, e.g. [0,1,2,3,4,5]) -
+      a far more reliable enum marker than any typeId-based
+      whitelist, since it comes straight from the API regardless of
+      which numeric typeId happens to be used. See is_enum_value() in
+      metadata.py. Decided NOT to pursue a full typeId/snvtName-based
+      reclassification of device_class()/has_numeric_value() - the
+      enum field covers the one case (enum vs. numeric ambiguity)
+      where it would have mattered; the rest of the existing
+      unit-string-based logic already works correctly for the
+      remaining types observed.
 - [ ] Firmware capability report
 
 ### Polling
@@ -200,6 +207,20 @@
 - [x] Conditional NV first refresh (blocking only on the very first
       setup, so entity_category is evaluated correctly; background
       task on every subsequent restart for faster startup)
+- [x] Entity category reconciliation on every setup (added
+      2026-06-30): HA only evaluates entity_category on an entity's
+      FIRST registration, not on subsequent restarts - found via live
+      testing that this isn't just a development quirk, a normal
+      HACS update (new files + restart, no manual re-add) hits the
+      same pattern, meaning classification fixes would silently not
+      apply to already-installed setups. _reconcile_entity_categories()
+      now compares each existing entity's stored category against
+      what the current code computes and corrects mismatches via the
+      registry. Must run AFTER the NV coordinator's refresh completes
+      (in both the blocking and background paths) - running it
+      earlier was an actual bug caught during testing (live values
+      not yet available, so classification was based on the "-"
+      catalog placeholder instead of the real value).
 - [x] config_entry passed to coordinators
 - [x] Eliminated build_integration.py / vendor/ copy step (lib/ moved
       directly into the integration with relative imports)
