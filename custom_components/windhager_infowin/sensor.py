@@ -32,6 +32,16 @@ async def async_setup_entry(
             oid,
         )
         for oid in coordinator.data
+        # Schreibbare normale OID-Entries landen als number/select
+        # Entity (nicht als read-only Sensor) - kein Duplikat.
+        # NV-Entries haben kein write_protected-Attribut und landen
+        # immer als Sensor.
+        if oid.startswith("nv:") or system.oid_map.get(oid, {}).get("entry") is None
+        or getattr(
+            system.oid_map[oid]["entry"],
+            "write_protected",
+            True,
+        )
     ]
 
     async_add_entities(entities)

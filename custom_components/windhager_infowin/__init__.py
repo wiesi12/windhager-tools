@@ -214,33 +214,30 @@ async def async_setup_entry(
         "nv_coordinator": nv_coordinator,
     }
 
-    await hass.config_entries.async_forward_entry_setups(
-        entry,
-        ["sensor"],
-    )
-
-    # Im Gegensatz zu _reconcile_entity_categories() (die Live-Werte
-    # braucht, siehe dort) braucht die Geraete-Bereinigung KEINE
-    # Live-Werte - wir wissen direkt nach system.initialize(), welche
-    # Module ausgewaehlt sind. Daher unabhaengig vom blockierend/
-    # Hintergrund-Pfad immer SOFORT aufrufen.
+    # Erst alte/veraltete Entities und Geraete bereinigen, BEVOR die
+    # Plattformen (sensor/number/select) ihre Entities anlegen.
+    # WICHTIG: Diese Reihenfolge ist entscheidend - wuerde
+    # async_forward_entry_setups() zuerst laufen, wuerde HA versuchen
+    # neue Entities (z.B. select.*) anzulegen, scheitert aber weil
+    # die alten Entries (z.B. sensor.*) mit derselben unique_id noch
+    # in der Registry sind. HA's unique_id ist global eindeutig, auch
+    # ueber Domains hinweg - der alte Eintrag muss also ZUERST
+    # entfernt werden, bevor der neue angelegt werden kann.
     await _reconcile_devices(
         hass,
         entry,
         system,
     )
 
-    # Analog zu _reconcile_devices(), aber eine Ebene tiefer: ein
-    # Modul kann weiterhin ausgewaehlt sein, aber EINZELNE Sensor-
-    # Gruppen davon (z.B. "Estrichausheizprogramm") koennen ueber den
-    # Options Flow abgewaehlt worden sein. Das entfernende Geraet
-    # selbst (siehe oben) faengt das nicht ab, da das Geraet ja
-    # weiterhin existiert - nur einzelne, darunterliegende Entities
-    # sollen verschwinden.
     await _reconcile_entities(
         hass,
         entry,
         system,
+    )
+
+    await hass.config_entries.async_forward_entry_setups(
+        entry,
+        ["sensor", "number", "select"],
     )
 
     if not existing_nv_entities:
@@ -389,6 +386,15 @@ async def _reconcile_entities(
     Flow abgewaehlt worden sein - das faengt die Geraete-Bereinigung
     nicht ab, da das Geraet selbst ja bestehen bleibt.
 
+    Beruecksichtigt auch DOMAIN-WECHSEL: wenn eine Entity frueher
+    als 'sensor' angelegt wurde, jetzt aber (z.B. nach Einfuehrung
+    von Write-Support) als 'select' oder 'number' erzeugt werden
+    sollte, entfernt diese Funktion den alten 'sensor'-Eintrag,
+    damit HA die Entity beim naechsten Setup in der richtigen Domain
+    neu anlegen kann. Ohne das bleibt z.B. 'Betriebswahl' dauerhaft
+    als unavailable sensor.* stehen, obwohl sie jetzt als select.*
+    erzeugt werden wuerde.
+
     Selbes Muster wie bei _reconcile_devices() und
     _reconcile_entity_categories(): HA entfernt Entities, die eine
     Integration bei einem Setup-Durchlauf nicht mehr erzeugt, NICHT
@@ -429,11 +435,59 @@ async def _reconcile_entities(
             )
 
             removed_count += 1
+            continue
+
+        # Domain-Wechsel pruefen: wenn die Entity als 'sensor'
+        # registriert ist, aber jetzt als 'select' oder 'number'
+        # erzeugt werden wuerde (z.B. durch nachtraeglich
+        # eingefuehrten Write-Support), den alten Eintrag entfernen.
+        if entity_entry.domain != "sensor":
+            continue
+
+        info = system.oid_map[oid]
+        entry_obj = info["entry"]
+
+        is_nv = oid.startswith("nv:")
+
+        if is_nv:
+            continue
+
+        is_writable = not getattr(
+            entry_obj,
+            "write_protected",
+            True,
+        )
+
+        if not is_writable:
+            continue
+
+        has_enum = bool(
+            getattr(
+                entry_obj,
+                "enum",
+                None,
+            )
+        )
+
+        has_numeric_range = (
+            entry_obj.min_value is not None
+            and entry_obj.max_value is not None
+            and not has_enum
+        )
+
+        if has_enum or has_numeric_range:
+
+            registry.async_remove(
+                entity_entry.entity_id
+            )
+
+            removed_count += 1
 
     if removed_count:
 
         _LOGGER.info(
-            "%d nicht mehr ausgewaehlte(r) Sensor(en) entfernt",
+            "%d veraltete(r) Sensor(en) entfernt "
+            "(nicht mehr ausgewaehlt oder Domain-Wechsel)",
             removed_count,
         )
 
@@ -548,7 +602,7 @@ async def async_unload_entry(
 
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry,
-        ["sensor"],
+        ["sensor", "number", "select"],
     )
 
     if unload_ok:
