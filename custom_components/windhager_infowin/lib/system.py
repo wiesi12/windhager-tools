@@ -93,10 +93,12 @@ class WindhagerSystem:
         self.poller = None
 
         self.oid_map = {}
+        self.enum_texts = {}
 
     def initialize(self):
 
         all_modules = None
+        enum_texts = {}
 
         if self.catalog_path.exists():
 
@@ -104,7 +106,7 @@ class WindhagerSystem:
 
             try:
 
-                all_modules = load_catalog(
+                all_modules, enum_texts = load_catalog(
                     self.catalog_path
                 )
 
@@ -136,7 +138,7 @@ class WindhagerSystem:
 
             print("Starte Discovery...")
 
-            all_modules = crawl(
+            all_modules, enum_texts = crawl(
                 self.client,
                 self.language,
             )
@@ -151,7 +153,10 @@ class WindhagerSystem:
             save_catalog(
                 all_modules,
                 self.catalog_path,
+                enum_texts,
             )
+
+        self.enum_texts = enum_texts
 
         if self.selected_module_ids is None:
 

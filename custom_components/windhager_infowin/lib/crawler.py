@@ -60,6 +60,13 @@ def crawl_structure(client, language=DEFAULT_LANGUAGE):
 
 
 def crawl(client, language=DEFAULT_LANGUAGE):
+    """Vollstaendigen Katalog ermitteln (Struktur + Werte + Namen).
+
+    Liefert (modules, enum_texts) - enum_texts ist die KOMPLETTE
+    AufzaehlTexte-Tabelle (nicht nur die fuer tatsaechlich gefundene
+    Enum-Eintraege relevanten Teile), damit sie unveraendert in
+    catalog.save_catalog() uebernommen werden kann.
+    """
 
     resources = Resources(language)
 
@@ -114,4 +121,4 @@ def crawl(client, language=DEFAULT_LANGUAGE):
                             or ""
                         )
 
-    return modules
+    return modules, resources.enum_texts

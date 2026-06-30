@@ -204,7 +204,7 @@ def device_class(entry):
     return DEVICE_CLASSES.get(entry.unit)
 
 
-def state_class(entry, live_value=None):
+def state_class(entry, live_value=None, enum_texts=None):
     """SensorStateClass fuer Langzeitstatistiken/Graphen bestimmen.
 
     - Monoton steigende Zaehler (Betriebsstunden, Anheizvorgaenge,
@@ -212,12 +212,13 @@ def state_class(entry, live_value=None):
     - Echte Momentanmesswerte (Temperatur, Drehzahl, Prozent, Druck,
       Lagerbestand etc.) -> MEASUREMENT.
     - Nicht-numerische oder reine Status-/Text-Werte (z.B. "Status",
-      "Zustand", Datum/Zeit) -> kein state_class (None), da HA dies
-      fuer einige device_classes (DATE, ENUM, ...) ohnehin verbietet
-      und es bei reinen Statuswerten auch inhaltlich keinen Sinn hat.
+      "Zustand", Datum/Zeit, oder ein als Enum erkannter Wert wie
+      "Standby") -> kein state_class (None), da HA dies fuer einige
+      device_classes (DATE, ENUM, ...) ohnehin verbietet und es bei
+      reinen Statuswerten auch inhaltlich keinen Sinn hat.
     """
 
-    if not has_numeric_value(entry, live_value):
+    if not has_numeric_value(entry, live_value, enum_texts):
         return None
 
     dclass = device_class(entry)
@@ -289,7 +290,41 @@ def suggested_precision(entry):
     return None
 
 
-def has_numeric_value(entry, live_value=None):
+def is_enum_value(entry, live_value=None, enum_texts=None):
+    """Pruefen, ob fuer den AKTUELLEN Wert dieses Entries eine
+    Enum-Text-Uebersetzung existiert (siehe parsed_value() fuer die
+    eigentliche Uebersetzung - diese Funktion nur fuer die ja/nein-
+    Entscheidung, ob "dieser Wert sollte als Enum/Text behandelt
+    werden", die has_numeric_value() braucht).
+    """
+
+    if not enum_texts:
+        return False
+
+    group = getattr(entry, "group", None)
+    member = getattr(entry, "member", None)
+
+    if group is None or member is None:
+        return False
+
+    value = entry.value if live_value is None else live_value
+
+    try:
+
+        enum_value = int(value)
+
+    except (ValueError, TypeError):
+
+        return False
+
+    return (
+        group,
+        member,
+        enum_value,
+    ) in enum_texts
+
+
+def has_numeric_value(entry, live_value=None, enum_texts=None):
     """Pruefen, ob der aktuelle Wert tatsaechlich eine Zahl ist.
 
     Bewusst NICHT mehr anhand von entry.unit vorgefiltert: viele
@@ -300,11 +335,21 @@ def has_numeric_value(entry, live_value=None):
     Platzhalter "-" wird hier ebenfalls korrekt als nicht-numerisch
     erkannt.
 
+    Werte mit einer ERFOLGREICH gefundenen Enum-Text-Uebersetzung
+    (z.B. "0" -> "Standby" fuer "Betriebswahl") gelten hier bewusst
+    NICHT als numerisch, obwohl sie als Rohwert float()-faehig waeren -
+    ein Statuscode ist kein Messwert, eine state_class/Statistik
+    darueber (z.B. "Durchschnitt 0.7" ueber Standby/Heizbetrieb-Codes)
+    waere bedeutungslos.
+
     Datum/Zeit-Werte gelten hier bewusst NICHT als "numerisch" (siehe
     has_valid_value()/parsed_value() fuer diese) - state_class macht
     fuer Datum/Zeit ohnehin keinen Sinn (HA verbietet state_class fuer
     device_class DATE explizit).
     """
+
+    if is_enum_value(entry, live_value, enum_texts):
+        return False
 
     value = entry.value if live_value is None else live_value
 
@@ -323,9 +368,10 @@ def has_numeric_value(entry, live_value=None):
         return False
 
 
-def has_valid_value(entry, live_value=None):
+def has_valid_value(entry, live_value=None, enum_texts=None):
     """Pruefen, ob der aktuelle Wert ueberhaupt sinnvoll dargestellt
-    werden kann - entweder als Zahl ODER als gueltiges Datum/Zeit.
+    werden kann - als Zahl, als gueltiges Datum/Zeit, ODER als Enum
+    mit bekannter Text-Uebersetzung.
 
     Wird von sensor.py verwendet, um zu entscheiden, ob device_class/
     unit_of_measurement/precision ueberhaupt gesetzt werden duerfen
@@ -333,7 +379,10 @@ def has_valid_value(entry, live_value=None):
     obwohl der Wert noch der Platzhalter "-" ist, und stuerzt ab).
     """
 
-    if has_numeric_value(entry, live_value):
+    if has_numeric_value(entry, live_value, enum_texts):
+        return True
+
+    if is_enum_value(entry, live_value, enum_texts):
         return True
 
     value = entry.value if live_value is None else live_value
@@ -347,14 +396,28 @@ def has_valid_value(entry, live_value=None):
     return False
 
 
-def parsed_value(entry, live_value=None):
+def parsed_value(entry, live_value=None, enum_texts=None):
     """Den aktuellen Wert in das von HA fuer die jeweilige
     device_class erwartete Python-Objekt umwandeln:
 
     - device_class DATE  -> datetime.date
     - device_class TIME  -> datetime.time
+    - Enum-Wert MIT bekannter Uebersetzung (siehe unten) -> lesbarer
+      Text statt der rohen Zahl (z.B. "Standby" statt "0")
     - alles andere       -> Rohwert unveraendert (Zahl bleibt String,
       HA/SensorEntity wandelt das selbst passend um)
+
+    enum_texts ist die komplette AufzaehlTexte-Tabelle als Dict mit
+    (group, member, enum_value) -> Text (siehe resources.Resources.
+    enum_texts). Optional - ohne sie (None oder leeres Dict, z.B. bei
+    Katalogen die vor Einfuehrung dieses Features gespeichert wurden)
+    verhaelt sich diese Funktion exakt wie vorher und liefert den
+    rohen Wert.
+
+    NUR normale Entry-Objekte haben group/member (NvEntry nicht) -
+    daher der getattr()-Fallback, der bei NvEntry automatisch None
+    liefert und damit denselben "kein Enum-Text gefunden"-Pfad nimmt
+    wie ein Entry ohne passenden Eintrag in enum_texts.
     """
 
     value = entry.value if live_value is None else live_value
@@ -364,6 +427,34 @@ def parsed_value(entry, live_value=None):
 
     if entry.unit == "21":
         return parse_time(value)
+
+    if enum_texts:
+
+        group = getattr(entry, "group", None)
+        member = getattr(entry, "member", None)
+
+        if group is not None and member is not None:
+
+            try:
+
+                enum_value = int(value)
+
+            except (ValueError, TypeError):
+
+                enum_value = None
+
+            if enum_value is not None:
+
+                enum_text = enum_texts.get(
+                    (
+                        group,
+                        member,
+                        enum_value,
+                    )
+                )
+
+                if enum_text:
+                    return enum_text
 
     return value
 
@@ -394,12 +485,16 @@ def icon(entry, lookup=None):
     return icons.get(kind)
 
 
-def metadata(entry, lookup=None, live_value=None):
+def metadata(entry, lookup=None, live_value=None, enum_texts=None):
 
     return {
         "classification": classify(entry, lookup),
         "device_class": device_class(entry),
-        "state_class": state_class(entry, live_value),
+        "state_class": state_class(
+            entry,
+            live_value,
+            enum_texts,
+        ),
         "entity_category": (
             entity_category(lookup, entry, live_value)
             if lookup
@@ -407,7 +502,19 @@ def metadata(entry, lookup=None, live_value=None):
         ),
         "precision": suggested_precision(entry),
         "icon": icon(entry, lookup),
-        "numeric": has_numeric_value(entry, live_value),
-        "valid": has_valid_value(entry, live_value),
-        "value": parsed_value(entry, live_value),
+        "numeric": has_numeric_value(
+            entry,
+            live_value,
+            enum_texts,
+        ),
+        "valid": has_valid_value(
+            entry,
+            live_value,
+            enum_texts,
+        ),
+        "value": parsed_value(
+            entry,
+            live_value,
+            enum_texts,
+        ),
     }

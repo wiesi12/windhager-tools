@@ -11,7 +11,15 @@ from .models import (
 )
 
 
-def save_catalog(modules, filename):
+def save_catalog(modules, filename, enum_texts=None):
+    """Katalog speichern.
+
+    enum_texts ist optional (Rueckwaertskompatibilitaet fuer Aufrufer,
+    die das Feature noch nicht nutzen) - ein Dict mit
+    "{group}:{member}:{enum_value}" als String-Schluessel (JSON kennt
+    keine Tupel als Objekt-Keys, daher hier als zusammengesetzter
+    String statt als verschachtelte Struktur) auf den lesbaren Text.
+    """
 
     filename = Path(filename)
 
@@ -20,13 +28,29 @@ def save_catalog(modules, filename):
         exist_ok=True,
     )
 
+    data = {
+        "modules": [
+            asdict(module) for module in modules
+        ],
+        "enum_texts": {
+            f"{group}:{member}:{enum_value}": text
+            for (
+                group,
+                member,
+                enum_value,
+            ), text in (
+                enum_texts or {}
+            ).items()
+        },
+    }
+
     with filename.open(
         "w",
         encoding="utf-8",
     ) as f:
 
         json.dump(
-            [asdict(module) for module in modules],
+            data,
             f,
             indent=2,
             ensure_ascii=False,
@@ -34,6 +58,21 @@ def save_catalog(modules, filename):
 
 
 def load_catalog(filename):
+    """Katalog laden.
+
+    Liefert (modules, enum_texts) - enum_texts als Dict mit
+    (group, member, enum_value)-Tupeln als Schluessel (wieder
+    zurueckgewandelt aus dem JSON-kompatiblen String-Format, in dem
+    save_catalog() sie ablegt).
+
+    Rueckwaertskompatibel zum AELTEREN Katalog-Format (eine reine
+    Liste von Modulen statt {"modules": [...], "enum_texts": {...}}):
+    falls die geladenen Top-Level-Daten eine Liste sind statt eines
+    Dicts, wird sie als "modules" interpretiert und enum_texts bleibt
+    leer - so muessen Kataloge, die vor Einfuehrung dieses Features
+    gespeichert wurden, nicht neu gecrawlt werden, nur weil sich das
+    Format geaendert hat.
+    """
 
     filename = Path(filename)
 
@@ -42,11 +81,40 @@ def load_catalog(filename):
         encoding="utf-8",
     ) as f:
 
-        data = json.load(f)
+        raw = json.load(f)
+
+    if isinstance(raw, list):
+
+        module_list_data = raw
+        enum_texts_data = {}
+
+    else:
+
+        module_list_data = raw["modules"]
+        enum_texts_data = raw.get(
+            "enum_texts",
+            {},
+        )
+
+    enum_texts = {}
+
+    for key, text in enum_texts_data.items():
+
+        group_str, member_str, enum_value_str = (
+            key.split(":")
+        )
+
+        enum_texts[
+            (
+                int(group_str),
+                int(member_str),
+                int(enum_value_str),
+            )
+        ] = text
 
     modules = []
 
-    for module_data in data:
+    for module_data in module_list_data:
 
         module = Module(
             id=module_data["id"],
@@ -125,4 +193,4 @@ def load_catalog(filename):
 
         modules.append(module)
 
-    return modules
+    return modules, enum_texts

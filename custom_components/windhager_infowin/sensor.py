@@ -128,6 +128,7 @@ class WindhagerSensor(
             self.entry,
             self.lookup,
             live_value,
+            self.system.enum_texts,
         )
 
     @property
@@ -271,6 +272,7 @@ class WindhagerSensor(
         return metadata.parsed_value(
             self.entry,
             live_value,
+            self.system.enum_texts,
         )
 
     @property

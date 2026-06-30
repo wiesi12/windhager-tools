@@ -32,11 +32,13 @@ class Resources:
 
         self.lookup_names = {}
         self.entry_names = {}
+        self.enum_texts = {}
 
     def load(self, client):
 
         self._load_lookup_names(client)
         self._load_entry_names(client)
+        self._load_enum_texts(client)
 
     def _load_lookup_names(self, client):
         """EbenenTexte_<lang>.xml laden.
@@ -105,6 +107,56 @@ class Resources:
                     )
                 ] = member.text or ""
 
+    def _load_enum_texts(self, client):
+        """AufzaehlTexte_<lang>.xml laden - lesbare Texte fuer Enum-
+        Werte (z.B. "0" -> "Standby" fuer "Betriebswahl").
+
+        Adressierung folgt demselben (group, member)-Schema wie
+        VarIdentTexte, mit einer zusaetzlichen Ebene fuer den
+        konkreten Enum-Wert selbst:
+
+            <gn id="3"><mn id="9"><enum id="0">Standby</enum></mn></gn>
+
+        -> group_id=3, member_id=9, enum_value=0 -> "Standby"
+
+        Nicht jede (group, member)-Kombination hat Enum-Texte (nur
+        Eintraege, die laut typeId tatsaechlich Enums sind) - fehlende
+        Kombinationen liefern entsprechend kein Ergebnis bei
+        enum_text().
+        """
+
+        xml = client.resource(
+            f"xml/AufzaehlTexte_{self.language}.xml"
+        )
+
+        root = ElementTree.fromstring(xml)
+
+        for group in root.findall("gn"):
+
+            group_id = int(
+                group.attrib["id"]
+            )
+
+            for member in group.findall("mn"):
+
+                member_id = int(
+                    member.attrib["id"]
+                )
+
+                for enum in member.findall("enum"):
+
+                    enum_value = int(
+                        enum.attrib["id"]
+                    )
+
+                    self.enum_texts[
+                        (
+                            group_id,
+                            member_id,
+                            enum_value,
+                        )
+                    ] = enum.text or ""
+
     def lookup_name(
         self,
         function_type,
@@ -128,5 +180,20 @@ class Resources:
             (
                 group_id,
                 member_id,
+            )
+        )
+
+    def enum_text(
+        self,
+        group_id,
+        member_id,
+        enum_value,
+    ):
+
+        return self.enum_texts.get(
+            (
+                group_id,
+                member_id,
+                enum_value,
             )
         )
