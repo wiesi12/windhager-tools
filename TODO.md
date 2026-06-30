@@ -155,14 +155,24 @@
 
 ### Number / Select
 
-- [ ] Add `number`/`select` entity platforms for writable values (see
-      "Write support" under Future for the confirmed API details -
-      write endpoint, payload format, and the typeId-based
-      enum/numeric distinction found while investigating this).
-      Originally four separate bullet points here (read/write values,
-      min/max/step, lookup enums, write support) - consolidated since
-      they're really one feature and the details belong in one place
-      instead of being duplicated.
+- [x] Add `number`/`select` entity platforms for writable values
+      (implemented 2026-06-30, released v0.6.0). Writable entries
+      (writeProt: false) are now exposed as number or select entities
+      instead of read-only sensors - numeric entries (min/max/step set,
+      no enum) as NumberEntity with box mode, enum entries as
+      SelectEntity with human-readable labels from AufzaehlTexte.
+      Write endpoint: PUT /api/1.0/datapoint with {OID, value}, works
+      with existing ENDUSER credentials. After writing, patches the
+      coordinator cache immediately for instant UI feedback then kicks
+      off a full background refresh (async_request_refresh was observed
+      to be debounced/ignored in live testing; async_refresh via
+      async_create_task is used instead). NV entries excluded (different
+      data model). Entity reconciliation order fix was also required:
+      _reconcile_entities() must run before async_forward_entry_setups()
+      since HA unique_ids are globally unique across domains - old
+      sensor.* entries block new select.* entries with the same OID
+      unless removed first. Verified live: Betriebswahl (select) and
+      Fusspunkt (number) both write correctly and update immediately.
 
 ### Devices
 
@@ -287,26 +297,9 @@
 
 ## Future
 
-- [ ] Write support (temperature setpoints, modes). Endpoint
-      confirmed via browser dev tools while testing the official web
-      interface: `PUT /api/1.0/datapoint` with JSON body
-      `{"OID": "/1/17/0/3/50/0", "value": "1"}` (OID format matches
-      the existing lookup path scheme, just as one string with a
-      leading slash instead of separate URL segments). Confirmed
-      working with a plain ENDUSER-level login (the same `USER`
-      account this integration already uses for reading) - no need
-      for SERVICE/OEM credentials. The `ws.setDP.req.xml`/
-      `ws.writeDP.req.xml` resources under `/res/xml/` are SOAP and
-      NOT what the current web interface actually uses - ignore them,
-      they're apparently a leftover from an older API generation.
-      Writable lookup responses also already include `minValue`,
-      `maxValue`, `step`/`stepId`, and `writeProt` (confirmed
-      2026-06-30 via live lookup responses for room temperature
-      setpoints - e.g. minValue "10.0", maxValue "30.0", step "0.5")
-      - everything needed to build proper `number` entities with
-      correct bounds, without having to guess or hardcode them. See
-      the typeId entry above for how to tell enum vs. numeric values
-      apart (`select` vs. `number` entities).
+- [x] Write support (temperature setpoints, modes) - implemented
+      2026-06-30, released v0.6.0. See Number/Select section above
+      for full implementation notes.
 - [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver) - considered and rejected for now (2026-06-29), risk to the heating controller not worth the time saved on a one-time setup step
 - [ ] Refine NV group selection: currently a single "NV's" checkbox
       covers all ~200 NV entries per module (e.g. BioWIN) - too coarse

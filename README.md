@@ -19,6 +19,23 @@ only, no cloud access needed) and exposes their data as sensors.
 - Also exposes around 200 LON network variables (NV's) as additional
   sensors, e.g. operating hours, pellet consumption, number of
   ignition cycles – with readable names for the most common ones
+- **Write support** *(experimental – use at your own risk)*:
+  writable values appear as interactive entities –
+  temperature setpoints (e.g. room temperature setpoint, setback
+  temperature) as number inputs with the correct bounds and step size
+  directly from the device, operating modes (e.g. Betriebswahl:
+  Standby / Heizprogramm 1 / ...) as dropdowns with human-readable
+  labels. Changes are confirmed immediately in the UI without waiting
+  for the next polling cycle.
+
+  > ⚠️ Write support has only been tested on a single installation
+  > (BioWIN pellet boiler, firmware S 1.0.2). It uses the same local
+  > API endpoint as the official Windhager web interface, with the
+  > same ENDUSER credentials – but incorrect values sent to a heating
+  > system can cause real problems. Double-check any value you set,
+  > and verify the result in the Windhager web interface. **Use at
+  > your own risk.** Feedback on what works (or doesn't) with other
+  > installations is very welcome via GitHub Issues.
 - Sensible Home Assistant metadata (units, device classes, state
   classes for long-term statistics/the Energy dashboard) instead of
   raw values
@@ -29,7 +46,9 @@ only, no cloud access needed) and exposes their data as sensors.
   and NV values (default: 10 minutes), to avoid putting unnecessary
   load on the heating controller
 - During setup, you can choose which modules (e.g. individual heating
-  circuits) and which sensor groups per module should be created
+  circuits) and which sensor groups per module should be created –
+  this selection can be changed at any time afterwards via
+  **Settings → Devices & Services → Windhager InfoWIN → Configure**
 
 ## Installation
 
@@ -128,8 +147,6 @@ INFINITY** control system.
   afterwards, or that the default login differs after a reset. If
   login doesn't work, a factory reset of the device often helps
   (reset button held for >10 seconds).
-- The integration is read-only (sensors only, no write access/control
-  of the system).
 - The "Modulinfo" sensors (Funktionsbezeichnung, Softwareversion
   Feuerungsautomat, Version HW) show "unknown" on pure heating-circuit
   modules (HK1/HK2/HK3) – this is not a bug in this integration, it
