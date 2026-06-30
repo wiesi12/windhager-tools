@@ -154,6 +154,30 @@
       hardcoded to "BioWIN" specifically, since other installations
       will have different module names) - maybe by module type/fctType
       pattern rather than name matching.
+
+      Investigated 2026-06-30 without finding a clean answer:
+        - lookup/1 (top-level module discovery) includes a
+          `device: {id: N}` field per module - HK1/HK2/HK3 all share
+          the same device.id (9), while BioWIN has a different one
+          (1), and the "n.a." module has no device field at all. This
+          shows HK1-3 share one physical hardware node, but doesn't
+          identify "the boiler" - it's a different (also potentially
+          useful) grouping than what this TODO item is about.
+        - Checked /res/xml/StaticNav.xml, MapToInstance.xml, and
+          StaticNavAssignment.xml (previously unexplored resource
+          files) hoping one would explicitly describe module
+          relationships. None of them do - StaticNav.xml covers
+          UI elements like time programs/error logs/password fields
+          (and reveals 2 more languages, es/nl, beyond the 4 currently
+          supported); MapToInstance.xml documents known multi-instance
+          module types (fctType 4 = "Kaskadenmanager", 12 = "IO5500",
+          13 = "Solar ES" - more module types than this integration
+          has ever seen); StaticNavAssignment.xml maps functiontype
+          values to which StaticNav UI elements they get. None of
+          these address "which module is the boiler".
+      Remains unsolved with only one test installation - revisit if/
+      when there's data from an installation with a different module
+      structure to compare against.
 - [x] ~~Function-level devices~~ - considered and rejected 2026-06-30:
       would mean one HA device per lookup group (e.g. separate
       devices for "Betriebswahl", "Auslegungstemperaturen", etc.
