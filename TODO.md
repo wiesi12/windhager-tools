@@ -64,7 +64,16 @@
 - [x] Select sensor groups (per module, after module selection)
 - [x] Connection errors surfaced directly in the form
 - [ ] Reconfigure options (e.g. poll intervals, changing module/group
-      selection after initial setup)
+      selection after initial setup). Idea from 2026-06-29: show the
+      CURRENT/live sensor value next to each module/group checkbox
+      when reconfiguring (not during initial setup) - the coordinator
+      is already running with real data at that point, so this is
+      free (no extra API calls), unlike trying to preview values
+      during the initial config flow, which would need a full extra
+      polling round-trip before the user can even see the checkboxes
+      (considered and rejected for the initial setup specifically -
+      doubles the wait time for not much benefit, since the user
+      hasn't seen anything yet anyway at that point).
 
 ### Sensor
 
