@@ -1,16 +1,12 @@
 {
     "domain": "windhager_infowin",
     "name": "Windhager InfoWIN",
-    "version": "0.7.1",
-    "documentation": "https://github.com/wiesi12/windhager-tools",
-    "issue_tracker": "https://github.com/wiesi12/windhager-tools/issues",
-    "requirements": [],
-    "codeowners": [
-        "@wiesi12"
-    ],
+    "codeowners": ["@wiesi12"],
     "config_flow": true,
+    "documentation": "https://github.com/wiesi12/windhager-tools",
     "iot_class": "local_polling",
-    "loggers": [
-        "custom_components.windhager_infowin"
-    ]
+    "issue_tracker": "https://github.com/wiesi12/windhager-tools/issues",
+    "loggers": ["custom_components.windhager_infowin"],
+    "requirements": [],
+    "version": "0.7.2"
 }
