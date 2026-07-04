@@ -84,7 +84,7 @@ async def async_setup_entry(
     ]
 
     entities.append(
-        WindhagerPmxStateSensor(coordinator, system)
+        WindhagerPmxStateSensor(nv_coordinator, system)
     )
 
     async_add_entities(entities)
@@ -129,11 +129,13 @@ class WindhagerPmxStateSensor(
     def _raw_hex(self) -> int | None:
         if self.coordinator.data is None:
             return None
-        raw = self.coordinator.data.get("nv:60:32:0:27")
+        raw = self.coordinator.data.get("nv:60:27")
         if raw is None or raw == "-":
             return None
+        # NV-Coordinator liefert den Wert als Entry-Objekt mit .value
+        value = raw.value if hasattr(raw, "value") else raw
         try:
-            return int(str(raw), 16)
+            return int(str(value), 16)
         except (ValueError, TypeError):
             return None
 
