@@ -623,9 +623,9 @@ async def _reconcile_entity_categories(
 
     if updated_count:
 
-        _LOGGER.info(
+        _LOGGER.debug(
             "entity_category corrected for %d existing entities "
-            "(classification logic changed since initial registration)",
+            "(live value not yet available at entity registration time)",
             updated_count,
         )
 
