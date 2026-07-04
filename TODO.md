@@ -88,10 +88,16 @@
 
 - [x] Poll OIDs
 - [x] Poll NV's (separate, slower interval to limit extra API load)
+- [x] Configurable poll intervals (Options Flow, 2026-07-04): sensor
+      coordinator and NV coordinator intervals are now user-configurable
+      via Settings → Devices & Services → Windhager InfoWIN →
+      Configure → Poll intervals. Defaults: 1 min (sensors), 5 min
+      (NVs). Note: a single poll takes ~17-20s, so intervals below
+      30s are not useful in practice.
 - [ ] Optimized/parallel polling (note: the official Windhager web
       interface itself polls every 30 seconds, observed via browser
       dev tools on 2026-06-29, so the device is clearly designed to
-      handle frequent polling - our current 5/10 minute intervals are
+      handle frequent polling - our current 1/5 minute intervals are
       conservative by comparison. Still rejected parallelizing the
       *initial* discovery crawl specifically, since that's a burst of
       ~80-280 near-simultaneous requests rather than steady periodic
@@ -137,6 +143,9 @@
           selected but individual sensor groups under it get
           deselected) - added _reconcile_entities(), verified live
           removing 17/19/2 stale sensors across separate test runs.
+- [x] Configurable poll intervals (2026-07-04): new "Poll intervals"
+      step at the end of the Options Flow, with separate number inputs
+      for sensor interval (1–60 min) and NV interval (1–60 min).
 
 ### Sensor
 
@@ -152,6 +161,12 @@
 - [x] Date/time parsing (native date/time objects, not raw strings)
 - [x] Stable, readable entity_ids (suggested_object_id)
 - [x] Graceful handling of non-numeric placeholder values ("-")
+- [x] PMX Brennerzustand sensor (2026-07-04): NV-Index 27 on module 60
+      translated to human-readable German state labels via
+      pmx_state_translation.py. Unknown states fall back to the raw
+      hex value with known_state=False so data collection continues
+      uninterrupted on other firmware versions. Verified against 5 days
+      / 17 combustion cycles on a BioWIN 2 Touch (PMX controller).
 
 ### Number / Select
 
@@ -173,6 +188,15 @@
       sensor.* entries block new select.* entries with the same OID
       unless removed first. Verified live: Betriebswahl (select) and
       Fusspunkt (number) both write correctly and update immediately.
+
+### Button
+
+- [x] "Jetzt aktualisieren" button entity (2026-07-04): two ButtonEntity
+      instances per integration entry — one for the main sensor
+      coordinator, one for the NV coordinator. Pressing triggers
+      async_request_refresh() for an immediate poll without reloading
+      the integration. Both entities are attached to the boiler device
+      (module2_60) and visible in the dashboard.
 
 ### Devices
 
@@ -297,9 +321,6 @@
 
 ## Future
 
-- [x] Write support (temperature setpoints, modes) - implemented
-      2026-06-30, released v0.6.0. See Number/Select section above
-      for full implementation notes.
 - [ ] Parallelized/faster initial discovery (carefully, to avoid overloading the webserver) - considered and rejected for now (2026-06-29), risk to the heating controller not worth the time saved on a one-time setup step
 - [ ] Refine NV group selection: currently a single "NV's" checkbox
       covers all ~200 NV entries per module (e.g. BioWIN) - too coarse
@@ -308,11 +329,7 @@
       (no entry in nv_names.py). Revisit once more NV names are
       known/whitelisted, or find another sensible grouping
       (e.g. by snvt_name/category).
-- [x] Architecture simplification: moved windhager_tools/ directly into
-      custom_components/windhager_infowin/lib/ with relative imports
-      from the start, eliminating tools/build_integration.py and the
-      vendor/ copy step entirely (done 2026-06-29, after the v0.2.0
-      release). Also removed pyproject.toml/MANIFEST.in (only existed
-      for windhager_tools as a standalone pip package, which is no
-      longer a goal) and a stray duplicate manifest.json that had
-      ended up at the repo root.
+- [ ] Better device hierarchy via `via_device` (see Devices section above)
+- [ ] Firmware capability report
+- [ ] Change detection (skip coordinator write if value unchanged)
+- [ ] Submit to HACS default store

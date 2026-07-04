@@ -44,6 +44,14 @@
                 "data": {
                     "groups": "Sensor groups"
                 }
+            },
+            "poll_intervals": {
+                "title": "Poll intervals",
+                "description": "Configure how often the integration polls the heating system. Lower values give more up-to-date data but increase network traffic. NV values (operating hours, energy totals) change slowly — a longer interval is usually fine.",
+                "data": {
+                    "poll_interval_minutes": "Sensor poll interval",
+                    "nv_poll_interval_minutes": "NV values poll interval"
+                }
             }
         }
     }

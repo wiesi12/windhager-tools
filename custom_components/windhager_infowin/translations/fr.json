@@ -44,6 +44,14 @@
                 "data": {
                     "groups": "Groupes de capteurs"
                 }
+            },
+            "poll_intervals": {
+                "title": "Intervalles d'interrogation",
+                "description": "Définissez la fréquence à laquelle l'intégration interroge le système de chauffage. Des intervalles plus courts fournissent des données plus récentes mais augmentent le trafic réseau. Les valeurs NV (heures de fonctionnement, compteurs d'énergie) évoluent lentement — un intervalle plus long est généralement suffisant.",
+                "data": {
+                    "poll_interval_minutes": "Intervalle d'interrogation des capteurs",
+                    "nv_poll_interval_minutes": "Intervalle d'interrogation des valeurs NV"
+                }
             }
         }
     }

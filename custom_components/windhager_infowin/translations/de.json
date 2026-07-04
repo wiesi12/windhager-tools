@@ -44,6 +44,14 @@
                 "data": {
                     "groups": "Sensor-Gruppen"
                 }
+            },
+            "poll_intervals": {
+                "title": "Poll-Intervalle",
+                "description": "Wie oft die Integration die Heizungsanlage abfragt. Kürzere Intervalle liefern aktuellere Daten, erhöhen aber den Netzwerk-Traffic. NV-Werte (Betriebsstunden, Energiezähler) ändern sich langsam – ein längeres Intervall ist hier in der Regel ausreichend.",
+                "data": {
+                    "poll_interval_minutes": "Sensor-Abfrageintervall",
+                    "nv_poll_interval_minutes": "NV-Abfrageintervall"
+                }
             }
         }
     }

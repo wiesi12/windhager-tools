@@ -32,7 +32,7 @@ async def async_setup_entry(
     setup_started_at = time.monotonic()
 
     _LOGGER.debug(
-        "Setup gestartet fuer %s",
+        "Setup started for %s",
         entry.data.get("host"),
     )
 
@@ -45,7 +45,7 @@ async def async_setup_entry(
     language = resolve_language(hass)
 
     _LOGGER.debug(
-        "Sprache aufgeloest: %s",
+        "Language resolved: %s",
         language,
     )
 
@@ -107,7 +107,7 @@ async def async_setup_entry(
     if catalog_existed_before:
 
         _LOGGER.debug(
-            "Katalog aus Cache geladen (%s) in %.1fs",
+            "Catalog loaded from cache (%s) in %.1fs",
             system.catalog_path,
             initialize_duration,
         )
@@ -115,8 +115,8 @@ async def async_setup_entry(
     else:
 
         _LOGGER.info(
-            "Neuer Discovery-Crawl abgeschlossen in %.1fs "
-            "(Katalog gespeichert unter %s)",
+            "Discovery crawl completed in %.1fs "
+            "(catalog saved to %s)",
             initialize_duration,
             system.catalog_path,
         )
@@ -125,6 +125,10 @@ async def async_setup_entry(
         hass,
         entry,
         system,
+        update_interval_minutes=entry.data.get(
+            "poll_interval_minutes",
+            1,
+        ),
     )
 
     coordinator_refresh_started_at = time.monotonic()
@@ -132,7 +136,7 @@ async def async_setup_entry(
     await coordinator.async_config_entry_first_refresh()
 
     _LOGGER.debug(
-        "Erster Sensor-Refresh abgeschlossen in %.1fs",
+        "First sensor refresh completed in %.1fs",
         time.monotonic() - coordinator_refresh_started_at,
     )
 
@@ -140,6 +144,10 @@ async def async_setup_entry(
         hass,
         entry,
         system,
+        update_interval_minutes=entry.data.get(
+            "nv_poll_interval_minutes",
+            5,
+        ),
     )
 
     # Nur beim ALLERERSTEN Setup dieser Config-Entry blockierend
@@ -173,8 +181,8 @@ async def async_setup_entry(
     if existing_nv_entities:
 
         _LOGGER.debug(
-            "%d bestehende NV-Entities gefunden - "
-            "NV-Refresh laeuft im Hintergrund",
+            "%d existing NV entities found - "
+            "NV refresh running in background",
             len(existing_nv_entities),
         )
 
@@ -192,9 +200,9 @@ async def async_setup_entry(
     else:
 
         _LOGGER.info(
-            "Keine bestehenden NV-Entities gefunden - "
-            "warte blockierend auf ersten NV-Refresh "
-            "(kann je nach Anlagengroesse 30-90s dauern)",
+            "No existing NV entities found - "
+            "waiting for first NV refresh "
+            "(may take 30-90s depending on installation size)",
         )
 
         nv_refresh_started_at = time.monotonic()
@@ -202,7 +210,7 @@ async def async_setup_entry(
         await nv_coordinator.async_config_entry_first_refresh()
 
         _LOGGER.info(
-            "Erster NV-Refresh abgeschlossen in %.1fs",
+            "First NV refresh completed in %.1fs",
             time.monotonic() - nv_refresh_started_at,
         )
 
@@ -237,7 +245,7 @@ async def async_setup_entry(
 
     await hass.config_entries.async_forward_entry_setups(
         entry,
-        ["sensor", "number", "select"],
+        ["sensor", "number", "select", "button"],
     )
 
     if not existing_nv_entities:
@@ -256,7 +264,7 @@ async def async_setup_entry(
         )
 
     _LOGGER.debug(
-        "Setup abgeschlossen in %.1fs insgesamt",
+        "Setup completed in %.1fs total",
         time.monotonic() - setup_started_at,
     )
 
@@ -333,8 +341,7 @@ async def _reconcile_devices(
     if removed_count:
 
         _LOGGER.info(
-            "%d nicht mehr ausgewaehlte(s) Modul-Geraet(e) "
-            "entfernt",
+            "%d stale module device(s) removed",
             removed_count,
         )
 
@@ -496,8 +503,8 @@ async def _reconcile_entities(
     if removed_count:
 
         _LOGGER.info(
-            "%d veraltete(r) Sensor(en) entfernt "
-            "(nicht mehr ausgewaehlt oder Domain-Wechsel)",
+            "%d stale entity/entities removed "
+            "(deselected or domain change)",
             removed_count,
         )
 
@@ -536,6 +543,26 @@ async def _reconcile_entity_categories(
 
     nv_data = nv_coordinator.data or {}
 
+    # Haupt-Coordinator-Daten ebenfalls einbeziehen: normale OID-
+    # Entries (z.B. hex-wertige Statusfelder wie PMX_Status, GB_m)
+    # laufen NICHT ueber den NV-Coordinator, daher liefert nv_data
+    # fuer diese immer None. Ohne die Haupt-Coordinator-Daten wuerde
+    # live_value fuer solche Entries auf den statischen Katalog-
+    # Platzhalterwert "-" zurueckfallen, der kein Hex-Wert ist -
+    # is_raw_hex_value() wuerde faelschlich False liefern, und die
+    # entity_category wuerde bei jedem Start zwischen DIAGNOSTIC und
+    # None wechseln (je nachdem ob ein Live-Wert vorliegt oder nicht).
+    coordinator_data = (
+        hass.data.get(DOMAIN, {})
+        .get(entry.entry_id, {})
+        .get("coordinator")
+    )
+    coordinator_data = (
+        coordinator_data.data
+        if coordinator_data is not None
+        else {}
+    ) or {}
+
     updated_count = 0
 
     for entity_entry in er.async_entries_for_config_entry(
@@ -568,11 +595,10 @@ async def _reconcile_entity_categories(
         if info is None:
             continue
 
-        # Fuer NV's den aktuellen Wert aus dem NV-Coordinator nehmen
-        # (falls schon vorhanden), sonst auf den statischen Katalog-
-        # Wert zurueckfallen - dasselbe Muster wie sensor.py's
-        # live_entry-Property.
-        live_entry = nv_data.get(oid)
+        # NV-Entries: Wert aus nv_data; normale OID-Entries: Wert aus
+        # coordinator_data. Erst nv_data, dann coordinator_data, dann
+        # Katalog-Platzhalter als letzter Fallback.
+        live_entry = nv_data.get(oid) or coordinator_data.get(oid)
 
         live_value = (
             live_entry.value
@@ -598,9 +624,8 @@ async def _reconcile_entity_categories(
     if updated_count:
 
         _LOGGER.info(
-            "entity_category fuer %d bestehende Sensoren "
-            "korrigiert (Klassifizierungslogik hat sich seit "
-            "deren erster Registrierung geaendert)",
+            "entity_category corrected for %d existing entities "
+            "(classification logic changed since initial registration)",
             updated_count,
         )
 
@@ -612,7 +637,7 @@ async def async_unload_entry(
 
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry,
-        ["sensor", "number", "select"],
+        ["sensor", "number", "select", "button"],
     )
 
     if unload_ok:

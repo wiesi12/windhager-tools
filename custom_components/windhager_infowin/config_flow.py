@@ -639,6 +639,23 @@ class WindhagerOptionsFlow(
             self._selected_groups_by_module
         )
 
+        # Zwischenspeichern - wird erst in async_step_poll_intervals
+        # zusammen mit den Intervall-Einstellungen final committet.
+        self._pending_data = data
+
+        # Signalisiert dem Aufrufer (async_step_select_groups):
+        # alle Module durch, weiter zum naechsten Schritt.
+        return "ADVANCE_TO_POLL_INTERVALS"
+
+    def _commit_and_reload(self, data):
+        """Fertige Config in entry.data schreiben und Reload ausloesen.
+
+        Ausgelagert damit async_step_poll_intervals() sauber committen
+        kann. Siehe Klassen-Docstring fuer die Begruendung des
+        time.time()-Timestamps (zuverlaessiger Reload via
+        OptionsFlowWithReload).
+        """
+
         self.hass.config_entries.async_update_entry(
             self.config_entry,
             data=data,
@@ -660,15 +677,83 @@ class WindhagerOptionsFlow(
         # Daten geaendert"-Pruefung von OptionsFlowWithReload auf den
         # HIER an async_create_entry() uebergebenen Wert schaut (der
         # in entry.options landet), nicht auf unsere SEPARATE
-        # async_update_entry(data=...)-Aenderung oben. Ein garantiert
-        # bei jedem Aufruf unterschiedlicher Wert macht den Reload
-        # zuverlaessig, unabhaengig von dieser internen Logik. Der
-        # konkrete Wert selbst hat keine funktionale Bedeutung - die
-        # eigentliche Konfiguration steckt in entry.data (siehe oben).
+        # async_update_entry(data=...)-Aenderung oben.
         return self.async_create_entry(
             data={
                 "_last_updated": time.time(),
             }
+        )
+
+    async def async_step_poll_intervals(
+        self,
+        user_input=None,
+    ):
+        """Poll-Intervalle konfigurieren.
+
+        Letzter Schritt im Options Flow, direkt nach der Modul-/Gruppen-
+        Auswahl. Speichert die gewaehlten Intervalle in entry.data und
+        loest den Reload aus.
+
+        Standardwerte: 1 Minute (Sensoren), 5 Minuten (NV-Werte).
+        Sinnvoller Bereich: 1-60 Minuten fuer Sensoren, 1-60 Minuten
+        fuer NVs. NVs schlagen sich pro NV-Index mit einem eigenen
+        API-Call nieder - deshalb bewusst langsamer als Sensoren.
+        """
+
+        if user_input is not None:
+
+            data = self._pending_data
+            data["poll_interval_minutes"] = (
+                user_input["poll_interval_minutes"]
+            )
+            data["nv_poll_interval_minutes"] = (
+                user_input["nv_poll_interval_minutes"]
+            )
+
+            return self._commit_and_reload(data)
+
+        current_poll = self.config_entry.data.get(
+            "poll_interval_minutes",
+            1,
+        )
+
+        current_nv_poll = self.config_entry.data.get(
+            "nv_poll_interval_minutes",
+            5,
+        )
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    "poll_interval_minutes",
+                    default=current_poll,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=1,
+                        max=60,
+                        step=1,
+                        unit_of_measurement="min",
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Required(
+                    "nv_poll_interval_minutes",
+                    default=current_nv_poll,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=1,
+                        max=60,
+                        step=1,
+                        unit_of_measurement="min",
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="poll_intervals",
+            data_schema=schema,
         )
 
     async def async_step_select_groups(
@@ -695,6 +780,9 @@ class WindhagerOptionsFlow(
 
             result = self._finish_module_and_advance()
 
+            if result == "ADVANCE_TO_POLL_INTERVALS":
+                return await self.async_step_poll_intervals()
+
             if result is not None:
                 return result
 
@@ -707,6 +795,9 @@ class WindhagerOptionsFlow(
             ] = []
 
             result = self._finish_module_and_advance()
+
+            if result == "ADVANCE_TO_POLL_INTERVALS":
+                return await self.async_step_poll_intervals()
 
             if result is not None:
                 return result

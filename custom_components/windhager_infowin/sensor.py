@@ -8,6 +8,7 @@ from .const import DOMAIN
 from . import metadata
 from . import naming
 from .lib.slug import build_slug
+from .pmx_state_translation import translate_pmx_state
 
 
 async def async_setup_entry(
@@ -82,7 +83,80 @@ async def async_setup_entry(
         )
     ]
 
+    entities.append(
+        WindhagerPmxStateSensor(coordinator, system)
+    )
+
     async_add_entities(entities)
+
+
+class WindhagerPmxStateSensor(
+    CoordinatorEntity,
+    SensorEntity,
+):
+    """Sensor fuer den PMX-Brennerzustand (NV-Index 27).
+
+    Liefert einen lesbaren Zustandsnamen statt des rohen Hex-Werts.
+    Unbekannte Zustaende (z.B. andere Firmware-Versionen) werden als
+    Rohwert durchgereicht (known_state=False) statt einen Fehler zu
+    werfen, damit Nutzer anderer Anlagen trotzdem Daten sammeln koennen.
+
+    Verifikation: BioWIN 2 Touch, PMX-Controller, 5 Tage / 17 Zyklen.
+    Details: pmx_state_translation.py
+    """
+
+    _attr_has_entity_name = True
+    _attr_name = "PMX Brennerzustand"
+    _attr_icon = "mdi:fire"
+
+    def __init__(self, coordinator, system):
+        super().__init__(coordinator)
+        self.system = system
+
+    @property
+    def unique_id(self):
+        return "windhager_v2_pmx_state_zustand"
+
+    @property
+    def device_info(self):
+        return DeviceInfo(
+            identifiers={(DOMAIN, "module2_60")},
+            manufacturer="Windhager",
+            model="InfoWIN",
+        )
+
+    @property
+    def _raw_hex(self) -> int | None:
+        if self.coordinator.data is None:
+            return None
+        raw = self.coordinator.data.get("nv:60:32:0:27")
+        if raw is None or raw == "-":
+            return None
+        try:
+            return int(str(raw), 16)
+        except (ValueError, TypeError):
+            return None
+
+    @property
+    def native_value(self) -> str | None:
+        raw = self._raw_hex
+        if raw is None:
+            return None
+        return translate_pmx_state(raw)["label"]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        raw = self._raw_hex
+        if raw is None:
+            return {}
+        info = translate_pmx_state(raw)
+        return {
+            "phase":       info["phase"],
+            "active":      info["active"],
+            "confidence":  info["confidence"],
+            "known_state": info["known_state"],
+            "raw":         info["raw"],
+        }
 
 
 class WindhagerSensor(

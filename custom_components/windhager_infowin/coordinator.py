@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WindhagerCoordinator(DataUpdateCoordinator):
-    """Coordinator (Default: alle 5 Minuten) fuer die normalen OID-
+    """Coordinator (Default: alle 1 Minute) fuer die normalen OID-
     Sensoren. Bringt NV's zwar strukturell mit (Name, Index), aber
     OHNE deren teure Live-Wert-Abfrage - siehe WindhagerNvCoordinator
     fuer die tatsaechlichen NV-Werte.
@@ -31,7 +31,7 @@ class WindhagerCoordinator(DataUpdateCoordinator):
         hass,
         config_entry,
         system,
-        update_interval_minutes=5,
+        update_interval_minutes=1,
     ):
 
         super().__init__(
@@ -54,11 +54,11 @@ class WindhagerCoordinator(DataUpdateCoordinator):
 
 
 class WindhagerNvCoordinator(DataUpdateCoordinator):
-    """Seltener Coordinator (Default: alle 10 Minuten) NUR fuer die
+    """Seltener Coordinator (Default: alle 5 Minuten) NUR fuer die
     tatsaechlichen NV-Live-Werte (Betriebsstunden, Pelletverbrauch
     etc.). Pro NV ist ein zusaetzlicher API-Call noetig (siehe
     reader.read_nv_value), daher bewusst getrennt vom haeufigen
-    30s-Poll der normalen Sensoren.
+    1-Minuten-Poll der normalen Sensoren.
     """
 
     def __init__(
@@ -66,7 +66,7 @@ class WindhagerNvCoordinator(DataUpdateCoordinator):
         hass,
         config_entry,
         system,
-        update_interval_minutes=10,
+        update_interval_minutes=5,
     ):
 
         super().__init__(
@@ -86,3 +86,4 @@ class WindhagerNvCoordinator(DataUpdateCoordinator):
         return await self.hass.async_add_executor_job(
             self.system.poll_nv
         )
+

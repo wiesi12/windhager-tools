@@ -44,6 +44,14 @@
                 "data": {
                     "groups": "Gruppi di sensori"
                 }
+            },
+            "poll_intervals": {
+                "title": "Intervalli di interrogazione",
+                "description": "Imposta la frequenza con cui l'integrazione interroga l'impianto di riscaldamento. Intervalli più brevi forniscono dati più aggiornati ma aumentano il traffico di rete. I valori NV (ore di funzionamento, contatori di energia) cambiano lentamente — un intervallo più lungo è di solito sufficiente.",
+                "data": {
+                    "poll_interval_minutes": "Intervallo di interrogazione sensori",
+                    "nv_poll_interval_minutes": "Intervallo di interrogazione valori NV"
+                }
             }
         }
     }

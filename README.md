@@ -36,15 +36,24 @@ only, no cloud access needed) and exposes their data as sensors.
   > and verify the result in the Windhager web interface. **Use at
   > your own risk.** Feedback on what works (or doesn't) with other
   > installations is very welcome via GitHub Issues.
+- **PMX combustion state sensor** *(BioWIN / PMX controller only)*:
+  the internal PMX controller state (NV index 27) is translated into
+  readable German labels (Standby, Zündvorbereitung, Zündung,
+  Hochbrennen, Volllast, Modulation, Bereitschaft) instead of raw
+  hex values. Unknown states from other firmware versions fall back
+  to the raw hex value so data collection is never interrupted.
+- **"Jetzt aktualisieren" button**: trigger an immediate poll of all
+  sensors or NV values without reloading the integration – useful
+  after changing a setpoint or operating mode.
 - Sensible Home Assistant metadata (units, device classes, state
   classes for long-term statistics/the Energy dashboard) instead of
   raw values
 - Multi-language sensor names (German, English, French, Italian –
   depending on what your Windhager firmware provides), automatically
   matched to your Home Assistant system language
-- Separate update interval for regular sensors (default: 5 minutes)
-  and NV values (default: 10 minutes), to avoid putting unnecessary
-  load on the heating controller
+- **Configurable poll intervals**: choose how often the integration
+  polls your heating system (default: 1 minute for sensors, 5 minutes
+  for NV values) via the Options Flow
 - During setup, you can choose which modules (e.g. individual heating
   circuits) and which sensor groups per module should be created –
   this selection can be changed at any time afterwards via
@@ -163,6 +172,9 @@ INFINITY** control system.
   but never giving up entirely) until the webserver recovers on its
   own, typically without needing to restart Home Assistant or
   reconfigure the integration.
+- A single poll takes approximately 17–20 seconds, so poll intervals
+  below 30 seconds are not useful in practice. The NV poll takes
+  approximately 25–30 seconds.
 
 Feedback on success or problems with other installations/firmware
 versions is very welcome via
