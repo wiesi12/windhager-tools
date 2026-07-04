@@ -1,5 +1,6 @@
 {
     "name": "Windhager InfoWIN",
     "homeassistant": "2026.3.0",
-    "persistent_directory": "data"
+    "persistent_directory": "data",
+    "render_readme": true
 }
