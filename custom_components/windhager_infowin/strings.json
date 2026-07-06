@@ -52,6 +52,20 @@
                     "poll_interval_minutes": "Sensor poll interval",
                     "nv_poll_interval_minutes": "NV values poll interval"
                 }
+            },
+            "sensor_calibration": {
+                "title": "Sensor calibration",
+                "description": "Configure unit conversion factors for sensors whose raw values are device-specific. The pellet consumption sensor (NV index 19) raw value unit depends on your installation — on a BioWIN 2 Touch, 1 raw unit = 10 kg, so the factor is 10 (result is shown in tonnes). Leave at 1.0 if you are unsure; you can adjust it later.",
+                "data": {
+                    "pellet_unit_factor": "Pellet consumption raw unit factor (raw × factor ÷ 1000 = tonnes)"
+                }
+            },
+            "select_nv_groups": {
+                "title": "NV sensor groups",
+                "description": "Choose which groups of NV (LON network variable) sensors to create. Groups are based on the standardized LON data type (snvt_name) and work the same across all installations. Deselecting groups reduces the number of sensors but the data is still available if you re-enable them later.",
+                "data": {
+                    "nv_groups": "NV sensor groups"
+                }
             }
         }
     }

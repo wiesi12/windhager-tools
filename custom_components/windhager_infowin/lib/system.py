@@ -7,6 +7,7 @@ from .catalog import (
     save_catalog,
 )
 from .crawler import crawl
+from .nv_groups import filter_nv_entries
 from .poller import Poller
 from .resources import DEFAULT_LANGUAGE
 
@@ -73,21 +74,22 @@ class WindhagerSystem:
         language=DEFAULT_LANGUAGE,
         selected_module_ids=None,
         selected_groups_by_module=None,
+        selected_nv_groups=None,
     ):
 
         self.client = client
         self.catalog_path = Path(catalog_path)
         self.language = language
 
-        # None bedeutet "alle Module"/"alle Gruppen"
-        # (Rueckwaertskompatibilitaet fuer Config-Entries, die vor
-        # Einfuehrung der Modul-/Gruppen-Auswahl eingerichtet wurden,
-        # sowie fuer eigenstaendige Nutzung der Library ausserhalb der
-        # HA-Integration).
+        # None bedeutet "alle Module"/"alle Gruppen"/"alle NV-Gruppen"
         self.selected_module_ids = selected_module_ids
         self.selected_groups_by_module = (
             selected_groups_by_module
         )
+        # Liste von NV-Gruppen-Keys (z.B. ["nv_group_temperatures",
+        # "nv_group_counters"]). None = alle NV-Gruppen behalten
+        # (Rueckwaertskompatibilitaet).
+        self.selected_nv_groups = selected_nv_groups
 
         self.modules = None
         self.poller = None
@@ -177,6 +179,23 @@ class WindhagerSystem:
                 self.modules,
                 self.selected_groups_by_module,
             )
+
+        # NV-Gruppen-Filterung: innerhalb jedes NV-Lookups nur die
+        # gewaehlten snvt-Gruppen behalten.
+        if self.selected_nv_groups is not None:
+
+            for module in self.modules:
+
+                for function in module.functions:
+
+                    for lookup in function.lookups:
+
+                        if lookup.name == "NV's":
+
+                            lookup.entries = filter_nv_entries(
+                                lookup.entries,
+                                self.selected_nv_groups,
+                            )
 
         self.poller = Poller(
             self.client,

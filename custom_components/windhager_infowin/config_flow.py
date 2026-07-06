@@ -10,6 +10,7 @@ from .language import resolve_language
 from .lib import WindhagerClient
 from .lib.catalog import load_catalog
 from .lib.crawler import crawl_structure
+from .lib.nv_groups import groups_for_module, NV_GROUP_ORDER
 
 
 class WindhagerConfigFlow(
@@ -381,6 +382,8 @@ class WindhagerOptionsFlow(
         self._selected_modules = None
         self._module_index = 0
         self._selected_groups_by_module = {}
+        self._pending_data = {}
+        self._pending_data = {}
 
     async def async_step_init(
         self,
@@ -572,6 +575,11 @@ class WindhagerOptionsFlow(
                 if not lookup.name:
                     continue
 
+                # "NV's" wird separat in async_step_select_nv_groups
+                # behandelt - nicht als normale Checkbox anzeigen.
+                if lookup.name == "NV's":
+                    continue
+
                 key = f"{function.type}:{lookup.id}"
 
                 label = lookup.name
@@ -702,15 +710,14 @@ class WindhagerOptionsFlow(
 
         if user_input is not None:
 
-            data = self._pending_data
-            data["poll_interval_minutes"] = (
+            self._pending_data["poll_interval_minutes"] = (
                 user_input["poll_interval_minutes"]
             )
-            data["nv_poll_interval_minutes"] = (
+            self._pending_data["nv_poll_interval_minutes"] = (
                 user_input["nv_poll_interval_minutes"]
             )
 
-            return self._commit_and_reload(data)
+            return await self.async_step_sensor_calibration()
 
         current_poll = self.config_entry.data.get(
             "poll_interval_minutes",
@@ -756,6 +763,59 @@ class WindhagerOptionsFlow(
             data_schema=schema,
         )
 
+    async def async_step_sensor_calibration(
+        self,
+        user_input=None,
+    ):
+        """Sensor-Kalibrierung konfigurieren.
+
+        Aktuell: Pellet-Einheitenfaktor. Der Rohwert des NV-Sensors
+        "Pellet Foerdermenge Summe" (NV-Index 19) hat eine
+        anlagenabhaengige Einheit - auf der einzigen bisher getesteten
+        Anlage (BioWIN 2 Touch) entspricht 1 Roheinheit 10 kg, d.h.
+        der Faktor ist 10 (10.206 Roheinheiten = 102.06 t).
+
+        Der Faktor wird als float in entry.data gespeichert und vom
+        WindhagerPelletSensor in sensor.py angewendet. Default: 1.0
+        (keine Umrechnung, Rohwert wird unveraendert angezeigt).
+        """
+
+        if user_input is not None:
+
+            self._pending_data["pellet_unit_factor"] = (
+                user_input["pellet_unit_factor"]
+            )
+
+            return self._commit_and_reload(
+                self._pending_data
+            )
+
+        current_factor = self.config_entry.data.get(
+            "pellet_unit_factor",
+            1.0,
+        )
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    "pellet_unit_factor",
+                    default=current_factor,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=0.001,
+                        max=1000.0,
+                        step=0.001,
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="sensor_calibration",
+            data_schema=schema,
+        )
+
     async def async_step_select_groups(
         self,
         user_input=None,
@@ -781,7 +841,7 @@ class WindhagerOptionsFlow(
             result = self._finish_module_and_advance()
 
             if result == "ADVANCE_TO_POLL_INTERVALS":
-                return await self.async_step_poll_intervals()
+                return await self.async_step_select_nv_groups()
 
             if result is not None:
                 return result
@@ -790,32 +850,51 @@ class WindhagerOptionsFlow(
 
         if not keys_with_labels:
 
+            # None statt [] - damit _filter_modules_by_groups()
+            # dieses Modul komplett unveraendert uebernimmt (alle
+            # Lookups behalten). [] wuerde bedeuten "keine Lookups
+            # ausgewaehlt" und alle Sensoren des Moduls loeschen.
             self._selected_groups_by_module[
                 str(module.id)
-            ] = []
+            ] = None
 
             result = self._finish_module_and_advance()
 
             if result == "ADVANCE_TO_POLL_INTERVALS":
-                return await self.async_step_poll_intervals()
+                return await self.async_step_select_nv_groups()
 
             if result is not None:
                 return result
 
             return await self.async_step_select_groups()
 
-        previously_selected_groups = (
-            self.config_entry.data.get(
-                "selected_groups",
-                {},
-            ).get(
-                str(module.id),
-                [
-                    key
-                    for key, _ in keys_with_labels
-                ],
+        valid_keys = {key for key, _ in keys_with_labels}
+
+        previously_selected_groups = [
+            key
+            for key in (
+                self.config_entry.data.get(
+                    "selected_groups",
+                    {},
+                ).get(
+                    str(module.id),
+                    [key for key, _ in keys_with_labels],
+                )
             )
-        )
+            # Nur Keys behalten die noch gueltig sind - verhindert
+            # Validierungsfehler wenn sich die verfuegbaren Gruppen
+            # geaendert haben (z.B. "NV's" nach Einfuehrung der
+            # snvt-basierten NV-Gruppen-Auswahl).
+            if key in valid_keys
+        ]
+
+        # Falls nach dem Filtern nichts uebrig bleibt (z.B. weil
+        # ausschliesslich "NV's" gespeichert war): alle aktuellen
+        # Gruppen als Default nehmen.
+        if not previously_selected_groups:
+            previously_selected_groups = [
+                key for key, _ in keys_with_labels
+            ]
 
         options = [
             selector.SelectOptionDict(
@@ -846,4 +925,96 @@ class WindhagerOptionsFlow(
             description_placeholders={
                 "module_name": module.name,
             },
+        )
+
+    async def async_step_select_nv_groups(
+        self,
+        user_input=None,
+    ):
+        """NV-Gruppen (snvt-basiert) fuer alle Module mit NV-Eintraegen
+        auswaehlen.
+
+        Taucht nur auf wenn mindestens ein ausgewaehltes Modul
+        NV-Eintraege hat. Die Gruppen basieren auf dem standardisierten
+        LON-Typ snvt_name (nicht auf NV-Namen) und sind daher
+        anlagenunabhaengig.
+
+        Alle Gruppen sind standardmaessig ausgewaehlt (= gleiches
+        Verhalten wie bisher, Rueckwaertskompatibilitaet).
+        """
+
+        # _selected_modules kommt aus crawl_structure (keine Entries),
+        # _all_modules kommt aus load_catalog (volle NvEntry-Objekte).
+        # Fuer die NV-Gruppen-Erkennung brauchen wir die Entries.
+        # Beim Ersteinrichtungs-Flow (WindhagerConfigFlow) gibt es kein
+        # _all_modules - in dem Fall Schritt ueberspringen und alle
+        # NV-Gruppen verwenden (Default).
+        all_modules = getattr(self, "_all_modules", None)
+
+        if all_modules is None:
+            return await self.async_step_poll_intervals()
+
+        selected_ids = {
+            str(m.id) for m in self._selected_modules
+        }
+        catalog_modules = [
+            m for m in all_modules
+            if str(m.id) in selected_ids
+        ]
+
+        nv_groups = []
+        for module in catalog_modules:
+            for grp in groups_for_module(module):
+                if grp not in nv_groups:
+                    nv_groups.append(grp)
+
+        # In definierter Reihenfolge sortieren
+        nv_groups.sort(
+            key=lambda g: NV_GROUP_ORDER.index(g[0])
+            if g[0] in NV_GROUP_ORDER
+            else 999
+        )
+
+        # Kein Modul hat NV-Eintraege -> ueberspringen
+        if not nv_groups:
+            return await self.async_step_poll_intervals()
+
+        if user_input is not None:
+            self._pending_data["selected_nv_groups"] = (
+                user_input.get("nv_groups", [])
+            )
+            return await self.async_step_poll_intervals()
+
+        previously_selected = self.config_entry.data.get(
+            "selected_nv_groups",
+            # Default: alle Gruppen ausgewaehlt
+            [key for key, _ in nv_groups],
+        )
+
+        options = [
+            selector.SelectOptionDict(
+                value=key,
+                label=label,
+            )
+            for key, label in nv_groups
+        ]
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    "nv_groups",
+                    default=previously_selected,
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=options,
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="select_nv_groups",
+            data_schema=schema,
         )

@@ -45,6 +45,18 @@ only, no cloud access needed) and exposes their data as sensors.
 - **"Jetzt aktualisieren" button**: trigger an immediate poll of all
   sensors or NV values without reloading the integration – useful
   after changing a setpoint or operating mode.
+- **NV sensor groups**: NV sensors (LON network variables) can be
+  filtered by group based on their standardized LON data type
+  (`snvt_name`) — Temperatures, Power & RPM, Counters & Runtimes,
+  Operation & Status, Other. Works across all installations regardless
+  of NV names. Configurable via the Options Flow after first setup.
+- **Pellet consumption sensor** *(BioWIN only)*: dedicated sensor for
+  pellet consumption total (NV index 19) with a configurable unit
+  factor. On a BioWIN 2 Touch, 1 raw unit = 10 kg — set the factor
+  to 10 in the Options Flow to get the result in tonnes.
+- **Last known state on startup**: all sensors show their last known
+  value immediately after a restart instead of "Unknown" while waiting
+  for the first coordinator refresh (~18s sensors, ~25s NV values).
 - Sensible Home Assistant metadata (units, device classes, state
   classes for long-term statistics/the Energy dashboard) instead of
   raw values
@@ -58,6 +70,30 @@ only, no cloud access needed) and exposes their data as sensors.
   circuits) and which sensor groups per module should be created –
   this selection can be changed at any time afterwards via
   **Settings → Devices & Services → Windhager InfoWIN → Configure**
+
+## First-time setup notes
+
+A few things are only configurable **after** the initial setup
+completes, via **Settings → Devices & Services → Windhager InfoWIN →
+Configure**:
+
+- **NV sensor groups**: on initial installation, all NV groups are
+  included by default. To exclude groups you don't need (e.g. system
+  internals under "Betrieb & Status"), open Configure and deselect
+  them in the "NV sensor groups" step.
+
+- **Pellet consumption factor**: if your installation is a BioWIN
+  pellet boiler, set the factor to **10** (1 raw unit = 10 kg, result
+  shown in tonnes). The default is 1.0 (raw value, no conversion).
+  You'll find this in the "Sensor calibration" step.
+
+- **The integration catalog** (the discovered structure of your
+  heating system) is stored in the integration's data directory and
+  intentionally **not deleted** when you remove the integration — this
+  means a reinstall skips the ~30s discovery crawl and starts up
+  immediately. If you want a fresh discovery (e.g. after a firmware
+  update), delete the `catalog_*.json` file from
+  `custom_components/windhager_infowin/data/` before reinstalling.
 
 ## Installation
 

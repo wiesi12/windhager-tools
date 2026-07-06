@@ -71,12 +71,13 @@ async def async_setup_entry(
             "selected_groups"
         )
 
+        # None = alle NV-Gruppen (Rueckwaertskompatibilitaet)
+        selected_nv_groups = entry.data.get(
+            "selected_nv_groups"
+        )
+
         return WindhagerSystem(
             client,
-            # Sprache im Dateinamen, damit ein spaeterer Wechsel der
-            # HA-Systemsprache automatisch einen frischen Discovery-
-            # Crawl in der neuen Sprache ausloest, statt den alten
-            # Katalog der vorherigen Sprache weiterzuverwenden.
             str(
                 DATA_DIR
                 / f"catalog_{language}.json"
@@ -84,6 +85,7 @@ async def async_setup_entry(
             language=language,
             selected_module_ids=selected_module_ids,
             selected_groups_by_module=selected_groups_by_module,
+            selected_nv_groups=selected_nv_groups,
         )
 
     system = await hass.async_add_executor_job(

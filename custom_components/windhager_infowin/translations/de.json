@@ -52,6 +52,20 @@
                     "poll_interval_minutes": "Sensor-Abfrageintervall",
                     "nv_poll_interval_minutes": "NV-Abfrageintervall"
                 }
+            },
+            "sensor_calibration": {
+                "title": "Sensor-Kalibrierung",
+                "description": "Konfiguriere Umrechnungsfaktoren für Sensoren deren Rohwerte anlagenabhängig sind. Der Pelletverbrauch-Sensor (NV-Index 19) hat eine anlagenabhängige Roheinheit — auf einer BioWIN 2 Touch entspricht 1 Roheinheit 10 kg, also Faktor 10 (Ergebnis in Tonnen). Bei Unsicherheit 1.0 lassen und später anpassen.",
+                "data": {
+                    "pellet_unit_factor": "Pelletverbrauch Roheinheiten-Faktor (Rohwert × Faktor ÷ 1000 = Tonnen)"
+                }
+            },
+            "select_nv_groups": {
+                "title": "NV-Sensorgruppen",
+                "description": "Wähle welche NV-Sensorgruppen (LON-Netzwerkvariablen) angelegt werden sollen. Die Gruppen basieren auf dem standardisierten LON-Datentyp (snvt_name) und funktionieren auf allen Anlagen gleich. Abgewählte Gruppen reduzieren die Sensoranzahl, können aber jederzeit wieder aktiviert werden.",
+                "data": {
+                    "nv_groups": "NV-Sensorgruppen"
+                }
             }
         }
     }

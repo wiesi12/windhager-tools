@@ -83,9 +83,19 @@ async def async_setup_entry(
         )
     ]
 
-    entities.append(
-        WindhagerPmxStateSensor(nv_coordinator, system)
-    )
+    # PMX-Brennerzustand-Sensor nur anlegen wenn NV-Index 27 auf
+    # Modul 60 tatsaechlich in der Anlage vorhanden ist.
+    if "nv:60:27" in system.oid_map:
+        entities.append(
+            WindhagerPmxStateSensor(nv_coordinator, system)
+        )
+
+    # Pellet-Foerdermenge-Sensor nur anlegen wenn NV-Index 19 auf
+    # Modul 60 tatsaechlich vorhanden ist.
+    if "nv:60:19" in system.oid_map:
+        entities.append(
+            WindhagerPelletSensor(nv_coordinator, system, entry)
+        )
 
     async_add_entities(entities)
 
@@ -175,6 +185,94 @@ class WindhagerPmxStateSensor(
             "confidence":  info["confidence"],
             "known_state": info["known_state"],
             "raw":         info["raw"],
+        }
+
+
+class WindhagerPelletSensor(
+    CoordinatorEntity,
+    SensorEntity,
+):
+    """Sensor fuer die Pellet-Foerdermenge Summe (NV-Index 19)
+    mit konfigurierbarem Einheitenfaktor.
+
+    Der Rohwert des NV-Sensors ist anlagenabhaengig - auf der
+    BioWIN 2 Touch entspricht 1 Roheinheit 10 kg (d.h. Faktor 10,
+    10.206 Roheinheiten = 102.06 t). Auf anderen Anlagen kann der
+    Faktor abweichen. Der Faktor wird im Options Flow konfiguriert
+    (Standard: 1.0 = kein Umrechnen).
+
+    Ergebnis-Einheit: Tonnen (t) wenn Faktor > 1, sonst Roheinheit.
+    """
+
+    _attr_has_entity_name = True
+    _attr_name = "Pellet Foerdermenge Gesamt"
+    _attr_icon = "mdi:silo"
+    _attr_state_class = "total_increasing"
+    _attr_native_unit_of_measurement = "t"
+
+    def __init__(self, coordinator, system, entry):
+        super().__init__(coordinator)
+        self.system = system
+        self._entry = entry
+
+    @property
+    def unique_id(self):
+        return "windhager_v2_pellet_foerdermenge_gesamt"
+
+    @property
+    def device_info(self):
+        return DeviceInfo(
+            identifiers={(DOMAIN, "module2_60")},
+            manufacturer="Windhager",
+            model="InfoWIN",
+        )
+
+    @property
+    def _factor(self) -> float:
+        return float(
+            self._entry.data.get("pellet_unit_factor", 1.0)
+        )
+
+    @property
+    def _raw_value(self) -> float | None:
+        if self.coordinator.data is None:
+            try:
+                last_state = self.hass.states.get(
+                    self.entity_id
+                )
+                if last_state and last_state.state not in (
+                    "unknown", "unavailable", None,
+                ):
+                    return float(last_state.state) / self._factor * self._factor
+            except (ValueError, TypeError, AttributeError):
+                pass
+            return None
+        raw = self.coordinator.data.get("nv:60:19")
+        if raw is None or raw == "-":
+            return None
+        value = raw.value if hasattr(raw, "value") else raw
+        try:
+            return float(str(value))
+        except (ValueError, TypeError):
+            return None
+
+    @property
+    def native_value(self) -> float | None:
+        raw = self._raw_value
+        if raw is None:
+            return None
+        factor = self._factor
+        result = raw * factor / 1000
+        return round(result, 3)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        raw = self._raw_value
+        if raw is None:
+            return {}
+        return {
+            "raw": raw,
+            "unit_factor": self._factor,
         }
 
 

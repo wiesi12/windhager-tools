@@ -52,6 +52,20 @@
                     "poll_interval_minutes": "Intervallo di interrogazione sensori",
                     "nv_poll_interval_minutes": "Intervallo di interrogazione valori NV"
                 }
+            },
+            "sensor_calibration": {
+                "title": "Calibrazione sensori",
+                "description": "Configura i fattori di conversione per i sensori con valori grezzi dipendenti dall'installazione. Il sensore di consumo pellet (NV indice 19) ha un'unità grezza specifica dell'impianto — su un BioWIN 2 Touch, 1 unità grezza = 10 kg, quindi il fattore è 10 (risultato in tonnellate). Lascia 1.0 se non sei sicuro, puoi modificarlo in seguito.",
+                "data": {
+                    "pellet_unit_factor": "Fattore unità grezza consumo pellet (grezzo × fattore ÷ 1000 = tonnellate)"
+                }
+            },
+            "select_nv_groups": {
+                "title": "Gruppi sensori NV",
+                "description": "Scegli quali gruppi di sensori NV (variabili di rete LON) creare. I gruppi si basano sul tipo di dati LON standardizzato (snvt_name) e funzionano allo stesso modo su tutti gli impianti. I gruppi deselezionati riducono il numero di sensori ma possono essere riattivati in seguito.",
+                "data": {
+                    "nv_groups": "Gruppi sensori NV"
+                }
             }
         }
     }

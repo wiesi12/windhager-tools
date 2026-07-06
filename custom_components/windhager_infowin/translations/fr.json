@@ -52,6 +52,20 @@
                     "poll_interval_minutes": "Intervalle d'interrogation des capteurs",
                     "nv_poll_interval_minutes": "Intervalle d'interrogation des valeurs NV"
                 }
+            },
+            "sensor_calibration": {
+                "title": "Calibration des capteurs",
+                "description": "Configurez les facteurs de conversion pour les capteurs dont les valeurs brutes dépendent de l'installation. Le capteur de consommation de pellets (NV index 19) a une unité brute spécifique à l'installation — sur un BioWIN 2 Touch, 1 unité brute = 10 kg, donc le facteur est 10 (résultat en tonnes). Laissez 1.0 si vous n'êtes pas sûr, vous pourrez ajuster plus tard.",
+                "data": {
+                    "pellet_unit_factor": "Facteur d'unité brute consommation pellets (brut × facteur ÷ 1000 = tonnes)"
+                }
+            },
+            "select_nv_groups": {
+                "title": "Groupes de capteurs NV",
+                "description": "Choisissez les groupes de capteurs NV (variables réseau LON) à créer. Les groupes sont basés sur le type de données LON standardisé (snvt_name) et fonctionnent de la même façon sur toutes les installations. Les groupes désélectionnés réduisent le nombre de capteurs mais peuvent être réactivés à tout moment.",
+                "data": {
+                    "nv_groups": "Groupes de capteurs NV"
+                }
             }
         }
     }
