@@ -45,11 +45,14 @@
       Configure → Poll intervals. Defaults: 1 min (sensors), 5 min
       (NVs). Note: a single poll takes ~17-20s, so intervals below
       30s are not useful in practice.
+- [x] Change detection (2026-07-06): Poller now caches the last known
+      value per key and only triggers a coordinator update when a value
+      actually changes — reduces unnecessary HA state writes during
+      standby (e.g. when the boiler hasn't changed state between polls).
 - [ ] Optimized/parallel polling — rejected for initial discovery
       crawl (burst of ~80-280 requests, risk to heating controller);
       steady periodic polling is fine since the official web interface
       also polls every 30s.
-- [ ] Change detection (skip coordinator write if value unchanged)
 
 ---
 
@@ -63,6 +66,14 @@
 - [x] Connection errors surfaced in form
 - [x] Reconfigure options (module/group selection changeable after setup)
 - [x] Configurable poll intervals (2026-07-04)
+- [x] NV sensor group selection (2026-07-06): snvt-based grouping
+      (Temperaturen, Leistung & Drehzahlen, Zähler & Laufzeiten,
+      Betrieb & Status, Sonstige) — universal across all installations.
+      Available in Options Flow after first setup. Implemented in
+      nv_groups.py; filtered in system.py per selected_nv_groups.
+- [x] Sensor calibration step (2026-07-06): pellet consumption unit
+      factor configurable via Options Flow. Default 1.0 (no conversion).
+      On BioWIN 2 Touch: factor 10 → result in tonnes.
 
 ### Sensor
 
@@ -82,6 +93,9 @@
       "Unknown" while waiting for the first coordinator refresh.
       WindhagerSensor.live_entry reads from HA state cache as fallback;
       WindhagerPmxStateSensor._raw_hex reads last "raw" attribute.
+- [x] Pellet consumption sensor (2026-07-06): WindhagerPelletSensor
+      for NV index 19 with configurable unit factor. Only created when
+      nv:60:19 exists in oid_map (BioWIN-specific, not hardcoded).
 
 ### Number / Select
 
@@ -141,17 +155,7 @@
 
 ## Future
 
-- [ ] Refine NV group selection: currently a single "NV's" checkbox
-      covers all ~200 NV entries — too coarse. Individual per-NV
-      selection isn't practical (most NVs have cryptic raw names).
-      Revisit once more NV names are known, or find a sensible grouping
-      (e.g. by snvt_name/category).
-- [ ] Pellet consumption unit factor: raw NV value appears to be in
-      10kg units (10.206 → 102.06t). Workaround: template sensor.
-      Consider an optional calibration field in the Options Flow once
-      verified on other installations.
 - [ ] Better device hierarchy via `via_device` (see Devices above)
 - [ ] Firmware capability report
-- [ ] Change detection
 - [ ] Parallelized/faster initial discovery (rejected for now —
       risk to heating controller not worth the time saved)
