@@ -128,6 +128,23 @@ class WindhagerPmxStateSensor(
     @property
     def _raw_hex(self) -> int | None:
         if self.coordinator.data is None:
+            # NV-Coordinator noch nicht bereit (Hintergrund-Refresh
+            # nach dem Start noch nicht abgeschlossen). Letzten
+            # bekannten Wert aus dem HA-State-Cache lesen, damit der
+            # Sensor nach einem Neustart nicht "Unbekannt" zeigt bis
+            # der erste Refresh durch ist (~25s).
+            # Das "raw"-Attribut (z.B. "0x0100") das wir selbst
+            # mitliefern dient hier als zuverlaessige Quelle - es
+            # enthaelt immer den letzten echten Hex-Wert.
+            try:
+                last_state = self.hass.states.get(self.entity_id)
+                if last_state and last_state.state not in (
+                    "unknown", "unavailable", None
+                ):
+                    raw_attr = last_state.attributes.get("raw", "")
+                    return int(str(raw_attr), 16)
+            except (ValueError, TypeError, AttributeError):
+                pass
             return None
         raw = self.coordinator.data.get("nv:60:27")
         if raw is None or raw == "-":
@@ -195,17 +212,47 @@ class WindhagerSensor(
         nv_coordinator bewusst NICHT blockierend waehrend des
         Integrations-Setups (siehe __init__.py), daher koennen
         Entities kurzzeitig erzeugt werden, bevor echte Daten
-        vorliegen. In dem Fall liefert diese Property None, und alle
-        anderen Properties fallen auf den statischen Katalog-Wert
-        (self.entry) zurueck.
+        vorliegen.
+
+        Fallback: wenn noch keine Coordinator-Daten vorliegen, den
+        letzten bekannten HA-State aus der Registry lesen - damit
+        zeigen Sensoren nach einem Neustart sofort ihren letzten Wert
+        statt "-" / "Unbekannt", bis der erste Refresh abgeschlossen
+        ist. Gibt None zurueck wenn auch kein letzter State bekannt.
         """
 
-        if self.coordinator.data is None:
-            return None
+        if self.coordinator.data is not None:
+            return self.coordinator.data.get(self.oid)
 
-        return self.coordinator.data.get(
-            self.oid
-        )
+        # Coordinator noch nicht bereit - letzten bekannten State
+        # aus HA lesen. Wir bauen ein minimales Entry-aehnliches
+        # Objekt das nur .value hat, damit der Rest der Property-
+        # Kette (native_value, meta, etc.) unveraendert funktioniert.
+        try:
+            last_state = self.hass.states.get(self.entity_id)
+            if last_state and last_state.state not in (
+                "unknown", "unavailable", None, "-",
+            ):
+                # Minimales Stub-Objekt mit .value und .unit
+                entry = self.entry
+                unit = (
+                    last_state.attributes.get(
+                        "unit_of_measurement", ""
+                    )
+                    if entry is None
+                    else getattr(entry, "unit", "")
+                )
+
+                class _StubEntry:
+                    def __init__(self, value, unit):
+                        self.value = value
+                        self.unit = unit
+
+                return _StubEntry(last_state.state, unit)
+        except (AttributeError, Exception):
+            pass
+
+        return None
 
     @property
     def entry(self):
