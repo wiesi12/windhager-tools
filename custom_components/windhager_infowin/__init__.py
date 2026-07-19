@@ -247,7 +247,7 @@ async def async_setup_entry(
 
     await hass.config_entries.async_forward_entry_setups(
         entry,
-        ["sensor", "number", "select", "button"],
+        ["sensor", "number", "select", "button", "switch"],
     )
 
     if not existing_nv_entities:
@@ -639,7 +639,7 @@ async def async_unload_entry(
 
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry,
-        ["sensor", "number", "select", "button"],
+        ["sensor", "number", "select", "button", "switch"],
     )
 
     if unload_ok:

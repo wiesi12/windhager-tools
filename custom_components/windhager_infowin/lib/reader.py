@@ -98,6 +98,122 @@ def read_lookup(client, module, function, lookup, fetch_nv_values=False):
                 )
             )
 
+        elif "OID" not in item and "nvName" not in item and item.get("name"):
+
+            # Manche Entries liefern beim Listen-Call kein OID-Feld
+            # (z.B. "WW-Ladefreigabe Freigabe starten"). Die API hat
+            # die Daten, liefert sie aber erst beim gezielten
+            # Detail-Call mit dem memberNr als 5. Pfadsegment.
+            # Versuch: Detail-Call mit memberNr um die fehlenden
+            # Metadaten (OID, minValue, maxValue, writeProt) nachzuladen.
+            member_nr = item.get("memberNr")
+
+            if member_nr is not None:
+
+                try:
+
+                    detail = client.lookup(
+                        f"1/{module.id}/{function.id}"
+                        f"/{lookup.id}/{member_nr}"
+                    )
+
+                    # Detail-Call kann Array oder Dict liefern
+                    if isinstance(detail, list):
+                        detail = detail[0] if detail else {}
+
+                    if detail and "OID" in detail:
+
+                        entries.append(
+                            Entry(
+                                oid=detail["OID"],
+
+                                value=detail.get(
+                                    "value",
+                                    item.get("value"),
+                                ),
+
+                                unit=detail.get(
+                                    "unit",
+                                    item.get("unit"),
+                                ),
+                                unit_id=detail.get(
+                                    "unitId",
+                                    item.get("unitId"),
+                                ),
+
+                                type_id=detail.get(
+                                    "typeId",
+                                    item.get("typeId"),
+                                ),
+                                subtype_id=detail.get(
+                                    "subtypeId",
+                                    item.get("subtypeId"),
+                                ),
+
+                                group=detail.get(
+                                    "groupNr",
+                                    item.get("groupNr"),
+                                ),
+                                member=detail.get(
+                                    "memberNr",
+                                    item.get("memberNr"),
+                                ),
+
+                                min_value=detail.get(
+                                    "minValue",
+                                    item.get("minValue"),
+                                ),
+                                max_value=detail.get(
+                                    "maxValue",
+                                    item.get("maxValue"),
+                                ),
+
+                                step=detail.get(
+                                    "step",
+                                    item.get("step"),
+                                ),
+                                step_id=detail.get(
+                                    "stepId",
+                                    item.get("stepId"),
+                                ),
+
+                                timestamp=detail.get(
+                                    "timestamp",
+                                    item.get("timestamp"),
+                                ),
+
+                                enum=_parse_enum_field(
+                                    detail.get("enum")
+                                ),
+
+                                write_protected=detail.get(
+                                    "writeProt",
+                                    item.get("writeProt"),
+                                ),
+
+                                name="",
+                            )
+                        )
+
+                        _LOGGER.debug(
+                            "OID-less entry '%s' resolved via "
+                            "detail call: %s",
+                            item.get("name"),
+                            detail["OID"],
+                        )
+
+                except Exception as exc:
+
+                    _LOGGER.debug(
+                        "Detail call failed for OID-less entry "
+                        "'%s' (module %s, lookup %s, member %s): %s",
+                        item.get("name"),
+                        module.id,
+                        lookup.id,
+                        member_nr,
+                        exc,
+                    )
+
         elif "nvName" in item:
 
             nv_index = item["nvIndex"]

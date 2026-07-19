@@ -80,6 +80,17 @@ async def async_setup_entry(
                 "unit_id",
                 None,
             ) in (0, 20, 21)
+            # Boolean-Entries (min=0, max=1, unit_id=0) landen als
+            # switch.WindhagerSwitch, nicht als read-only Sensor.
+            and not (
+                system.oid_map[oid]["entry"].min_value in ("0", 0, 0.0)
+                and system.oid_map[oid]["entry"].max_value in ("1", 1, 1.0)
+                and getattr(
+                    system.oid_map[oid]["entry"],
+                    "unit_id",
+                    None,
+                ) == 0
+            )
         )
     ]
 
