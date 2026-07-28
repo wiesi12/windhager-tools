@@ -36,6 +36,25 @@ only, no cloud access needed) and exposes their data as sensors.
   > and verify the result in the Windhager web interface. **Use at
   > your own risk.** Feedback on what works (or doesn't) with other
   > installations is very welcome via GitHub Issues.
+- **Time programs** *(experimental – use at your own risk)*: heating
+  circuit and domestic hot water time programs ("Zeitprogramm 1/2/3",
+  "Warmwasser Zeitprogramm", etc.) are exposed as sensors showing
+  their switch points/weekdays as attributes, and can be changed via
+  the `windhager_infowin.set_schedule` service (see `services.yaml`
+  for the exact fields, including support for multiple switch-point
+  groups per program, e.g. different values for weekdays vs. Sunday).
+  Detection is fully generic: it reads the device's own
+  `res/xml/StaticNav.xml` resource for the list of available time
+  program positions and their real (translated) names, instead of a
+  hardcoded list – so it should work on any installation, not just
+  this developer's. Only verified on a single installation so far. If
+  it doesn't find any schedules on your installation, please report
+  it via GitHub Issues.
+- **Time program card** *(experimental)*: an optional Lovelace card
+  for comfortably viewing/editing a time program instead of raw
+  sensor attributes/Developer Tools YAML - lives in its own repository
+  for separate HACS (Dashboard/plugin) distribution:
+  [windhager-schedule-card](https://github.com/wiesi12/windhager-schedule-card).
 - **PMX combustion state sensor** *(BioWIN / PMX controller only)*:
   the internal PMX controller state (NV index 27) is translated into
   readable German labels (Standby, Zündvorbereitung, Zündung,

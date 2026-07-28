@@ -102,6 +102,45 @@
 - [x] Writable values as NumberEntity / SelectEntity (v0.6.0)
 - [x] Instant UI feedback after write (cache patch + background refresh)
 
+### Schedule (Zeitprogramme)
+
+- [x] Generic discovery (2026-07-28): time programs (typeId 30) live
+      in an address space the normal lookup-group listing can't
+      enumerate (409 Conflict). Discovery reads the device's own
+      `res/xml/StaticNav.xml` resource for the authoritative list of
+      time-program positions (group/member + real translated name),
+      then checks every function of every module against that list
+      (lib/schedules.py) - no hardcoded group/module list, no member
+      range guessing, self-updating if the firmware adds more.
+- [x] Read via dedicated `object` endpoint (`get_object`/
+      `write_object` in lib/client.py) - the normal `lookup`/
+      `datapoint` endpoints never return the actual switchPoints
+      value for this object type.
+- [x] Multi-block support (2026-07-28): a time program can have
+      multiple switch-point groups with different weekdays (e.g. a
+      DHW program with different values for Mon-Sat vs. Sunday,
+      verified via browser devtools) - `write_schedule()`/
+      `set_schedule` service take a `blocks` list, not a single
+      switch-points/weekdays pair.
+- [x] `WindhagerScheduleCoordinator` (5 min default) + sensor with
+      the full block list (switchPoints/weekdays) as attribute.
+- [x] `windhager_infowin.set_schedule` service for writing.
+- [ ] Verified only on a single installation (3 heating circuits +
+      1 DHW time program found so far) - the StaticNav.xml-based
+      discovery itself is generic, but real-world variety (more/fewer
+      circuits, other program types) is untested.
+
+### Frontend
+
+- [x] Custom Lovelace card for viewing/editing a time program (switch
+      points + weekdays across multiple blocks) instead of raw sensor
+      attributes / Developer Tools YAML, single entity or multiple
+      with a dropdown to switch. Moved into its own repository
+      (2026-07-28) for separate HACS (Dashboard/plugin) distribution:
+      [windhager-schedule-card](https://github.com/wiesi12/windhager-schedule-card).
+      Verified with a static mocked-`hass` test harness AND live on a
+      real Home Assistant dashboard, incl. writing a DHW time program.
+
 ### Button
 
 - [x] "Refresh now" button entities (2026-07-04): two ButtonEntity
