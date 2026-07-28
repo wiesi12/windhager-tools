@@ -1,5 +1,6 @@
 from collections import Counter
 import copy
+import logging
 from pathlib import Path
 
 from .catalog import (
@@ -10,6 +11,14 @@ from .crawler import crawl
 from .nv_groups import filter_nv_entries
 from .poller import Poller
 from .resources import DEFAULT_LANGUAGE
+from .schedules import (
+    SCHEDULE_SUBTYPE_ID,
+    SCHEDULE_TYPE_ID,
+    discover_schedules,
+)
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _filter_modules_by_groups(
@@ -96,6 +105,7 @@ class WindhagerSystem:
 
         self.oid_map = {}
         self.enum_texts = {}
+        self.schedules = []
 
     def initialize(self):
 
@@ -203,6 +213,16 @@ class WindhagerSystem:
         )
 
         self.build_oid_map()
+
+        # Zeitprogramme sind bewusst NICHT Teil des gecachten Katalogs
+        # (siehe schedules.py) - der Scan ist klein/schnell genug, um
+        # bei jedem Start erneut zu laufen, statt das bestehende,
+        # getestete Katalog-Speicherformat anzufassen.
+        self.schedules = discover_schedules(
+            self.client,
+            self.modules,
+            self.language,
+        )
 
     def build_oid_map(self):
 
@@ -341,3 +361,82 @@ class WindhagerSystem:
             self.initialize()
 
         return self.poller.poll_nv()
+
+    def poll_schedules(self):
+        """Aktuelle Werte aller entdeckten Zeitprogramme abrufen.
+
+        Ein fehlschlagender Call fuer ein einzelnes Zeitprogramm
+        (z.B. voruebergehender Netzwerkfehler) bricht nicht den
+        gesamten Poll ab - passend zum bestehenden Umgang mit
+        Einzelfehlern beim NV-Polling (siehe reader.read_lookup()).
+        """
+
+        if self.poller is None:
+
+            self.initialize()
+
+        result = {}
+
+        for schedule in self.schedules:
+
+            try:
+
+                result[schedule["oid"]] = self.client.get_object(
+                    schedule["oid"]
+                )
+
+            except Exception as exc:
+
+                _LOGGER.debug(
+                    "Zeitprogramm-Abfrage fehlgeschlagen fuer %s: %s",
+                    schedule["oid"],
+                    exc,
+                )
+
+        return result
+
+    def write_schedule(self, oid, blocks):
+        """Ein Zeitprogramm (Schaltzeiten) schreiben.
+
+        oid muss zu einem von discover_schedules() gefundenen
+        Eintrag gehoeren - node_id/function_id/lookup/member werden
+        daraus abgeleitet, nicht separat uebergeben.
+
+        blocks: Liste von Schaltgruppen, je
+        {"switch_points": [{"time": ..., "value": ...}, ...],
+        "weekdays": [...]}. Windhager erlaubt mehrere Bloecke mit
+        unterschiedlichen Wochentagen (z.B. ein Warmwasser-
+        Zeitprogramm mit getrennten Werten fuer Mo-Sa und So) -
+        verifiziert am 2026-07-28 per Browser-Devtools.
+        """
+
+        schedule = next(
+            (
+                entry
+                for entry in self.schedules
+                if entry["oid"] == oid
+            ),
+            None,
+        )
+
+        if schedule is None:
+
+            raise ValueError(
+                f"Unbekanntes Zeitprogramm-OID: {oid}"
+            )
+
+        self.client.write_object(
+            node_id=schedule["module"].id,
+            function_id=schedule["function_id"],
+            oid_path=f"{schedule['lookup_id']}/{schedule['member_id']}",
+            oid=oid,
+            subtype_id=SCHEDULE_SUBTYPE_ID,
+            type_id=SCHEDULE_TYPE_ID,
+            value=[
+                {
+                    "switchPoints": block["switch_points"],
+                    "weekdays": block["weekdays"],
+                }
+                for block in blocks
+            ],
+        )

@@ -2,8 +2,12 @@ import logging
 import time
 from pathlib import Path
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
@@ -17,8 +21,30 @@ from .const import DATA_DIR, DOMAIN
 from .coordinator import (
     WindhagerCoordinator,
     WindhagerNvCoordinator,
+    WindhagerScheduleCoordinator,
 )
 from .language import resolve_language
+
+
+SET_SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required("oid"): cv.string,
+        vol.Required("blocks"): vol.All(
+            [
+                {
+                    vol.Required("switch_points"): [
+                        {
+                            vol.Required("time"): cv.string,
+                            vol.Required("value"): vol.Coerce(int),
+                        }
+                    ],
+                    vol.Required("weekdays"): [cv.string],
+                }
+            ],
+            vol.Length(min=1),
+        ),
+    }
+)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -216,13 +242,69 @@ async def async_setup_entry(
             time.monotonic() - nv_refresh_started_at,
         )
 
+    schedule_coordinator = WindhagerScheduleCoordinator(
+        hass,
+        entry,
+        system,
+        update_interval_minutes=entry.data.get(
+            "schedule_poll_interval_minutes",
+            5,
+        ),
+    )
+
+    # Blockierend warten ist hier unproblematisch (anders als beim
+    # NV-Refresh oben) - Zeitprogramme sind wenige, einzeln adressierte
+    # Objekte (siehe lib/schedules.py), kein 80-280-Request-Discovery-
+    # Burst.
+    await schedule_coordinator.async_config_entry_first_refresh()
+
     hass.data.setdefault(DOMAIN, {})
 
     hass.data[DOMAIN][entry.entry_id] = {
         "system": system,
         "coordinator": coordinator,
         "nv_coordinator": nv_coordinator,
+        "schedule_coordinator": schedule_coordinator,
     }
+
+    if not hass.services.has_service(DOMAIN, "set_schedule"):
+
+        async def _handle_set_schedule(call):
+
+            oid = call.data["oid"]
+
+            for entry_data in hass.data.get(DOMAIN, {}).values():
+
+                target_system = entry_data["system"]
+
+                if any(
+                    schedule["oid"] == oid
+                    for schedule in target_system.schedules
+                ):
+
+                    await hass.async_add_executor_job(
+                        target_system.write_schedule,
+                        oid,
+                        call.data["blocks"],
+                    )
+
+                    await entry_data[
+                        "schedule_coordinator"
+                    ].async_request_refresh()
+
+                    return
+
+            raise HomeAssistantError(
+                f"OID {oid} gehoert zu keinem bekannten "
+                f"Zeitprogramm dieser Integration"
+            )
+
+        hass.services.async_register(
+            DOMAIN,
+            "set_schedule",
+            _handle_set_schedule,
+            schema=SET_SCHEDULE_SCHEMA,
+        )
 
     # Erst alte/veraltete Entities und Geraete bereinigen, BEVOR die
     # Plattformen (sensor/number/select) ihre Entities anlegen.

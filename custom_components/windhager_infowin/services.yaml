@@ -1,0 +1,37 @@
+set_schedule:
+  name: Zeitprogramm setzen
+  description: >-
+    Schreibt ein Zeitprogramm (Schaltzeiten) auf die Windhager-Anlage.
+    Experimentell - die OID muss zu einem der von dieser Integration
+    entdeckten Zeitprogramm-Sensoren gehoeren (siehe dessen "oid"-
+    Attribut in den Entwicklertools unter "Zustand").
+  fields:
+    oid:
+      name: OID
+      description: >-
+        Volle OID des Zeitprogramms, z.B. "/1/15/0/3/61/0" - siehe
+        Attribut "oid" des entsprechenden Zeitprogramm-Sensors.
+      required: true
+      example: "/1/15/0/3/61/0"
+      selector:
+        text:
+    blocks:
+      name: Schaltgruppen
+      description: >-
+        Liste von Schaltgruppen (Bloecken). Jeder Block hat eigene
+        Schaltpunkte (Uhrzeit/Wert-Paare, "value" ist der von
+        Windhager verwendete Rohwert, z.B. Temperaturstufen-Index) und
+        eigene Wochentage (Mo, Tu, We, Th, Fr, Sa, Su). Windhager
+        erlaubt mehrere Bloecke mit unterschiedlichen Werten je
+        Wochentagsgruppe (z.B. ein Warmwasser-Zeitprogramm mit
+        getrennten Werten fuer Mo-Sa und So) - am einfachsten das
+        bestehende "schedule"-Attribut des Sensors als Vorlage
+        uebernehmen und nur die Uhrzeiten/Wochentage anpassen.
+      required: true
+      example: >-
+        [{"switch_points": [{"time": "06:00", "value": 55}, {"time":
+        "22:00", "value": 10}], "weekdays": ["Mo", "Tu", "We", "Th",
+        "Fr", "Sa"]}, {"switch_points": [{"time": "06:00", "value":
+        65}, {"time": "22:00", "value": 10}], "weekdays": ["Su"]}]
+      selector:
+        object:

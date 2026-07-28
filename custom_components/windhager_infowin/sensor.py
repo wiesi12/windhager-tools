@@ -7,7 +7,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from . import metadata
 from . import naming
-from .lib.slug import build_slug
+from .lib.slug import build_slug, slugify
 from .pmx_state_translation import translate_pmx_state
 
 
@@ -107,6 +107,19 @@ async def async_setup_entry(
         entities.append(
             WindhagerPelletSensor(nv_coordinator, system, entry)
         )
+
+    # Zeitprogramm-Sensoren (siehe lib/schedules.py): laufen bewusst
+    # als normale sensor.*-Entities in dieser Datei statt als eigene
+    # Plattform - "schedule" ist bereits ein von Home Assistant selbst
+    # reservierter Domain-Name (der "Schedule"-Helfer), eine eigene
+    # Plattform mit diesem Namen wuerde damit kollidieren.
+    schedule_coordinator = hass.data[DOMAIN][entry.entry_id][
+        "schedule_coordinator"
+    ]
+    entities.extend(
+        WindhagerScheduleSensor(schedule_coordinator, schedule)
+        for schedule in system.schedules
+    )
 
     async_add_entities(entities)
 
@@ -600,3 +613,111 @@ class WindhagerSensor(
         return self.meta.get(
             "precision"
         )
+
+
+class WindhagerScheduleSensor(
+    CoordinatorEntity,
+    SensorEntity,
+):
+    """Sensor fuer ein Zeitprogramm (Schaltzeiten) eines Heizkreises.
+
+    Experimentell (siehe README "Write support") - die Erkennung
+    dieser Objekte (lib/schedules.py) ist bislang nur an einer Anlage
+    verifiziert. Der eigentliche Wert (Schaltpunkte/Wochentage) landet
+    als Attribut, nicht als state - dafuer gibt es kein passendes
+    natives HA-Konzept.
+    """
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(
+        self,
+        coordinator,
+        schedule,
+    ):
+
+        super().__init__(coordinator)
+
+        self.schedule = schedule
+
+    @property
+    def unique_id(self):
+
+        # Bewusst OHNE das Praefix "windhager_v2_": das wird in
+        # __init__.py::_reconcile_entities() als "gehoert zu
+        # system.oid_map" interpretiert - eine dort nicht vorhandene
+        # OID (Zeitprogramme sind bewusst NICHT Teil des generischen
+        # Katalogs) wuerde die Entity bei jedem Reload als "stale"
+        # entfernt werden.
+        return f"windhager_schedule_{self.schedule['oid']}"
+
+    @property
+    def suggested_object_id(self):
+        """Stabilen, lesbaren Object-Id-Vorschlag liefern - wie bei
+        WindhagerSensor/build_slug() bewusst OHNE Area-/Geraetenamen
+        (die stellt Home Assistant bei has_entity_name=True automatisch
+        voran). Ohne dieses Property wuerde HA beim allerersten
+        Anlegen der Entity Area+Geraet+Name zu einer viel laengeren,
+        von der aktuellen Area-Zuweisung abhaengigen entity_id
+        zusammenbauen (z.B. "controlroom_hk1_og1_2_zeitprogramm_1"
+        statt stabil "zeitprogramm_1").
+        """
+
+        return slugify(self.schedule["name"])
+
+    @property
+    def device_info(self):
+
+        module = self.schedule["module"]
+
+        return DeviceInfo(
+            identifiers={
+                (
+                    DOMAIN,
+                    f"module2_{module.id}",
+                )
+            },
+        )
+
+    @property
+    def name(self):
+
+        return self.schedule["name"]
+
+    @property
+    def _raw(self):
+
+        if self.coordinator.data is None:
+            return None
+
+        return self.coordinator.data.get(
+            self.schedule["oid"]
+        )
+
+    @property
+    def native_value(self):
+
+        raw = self._raw
+
+        if raw is None:
+            return None
+
+        blocks = raw.get("value") or []
+
+        return sum(
+            len(block.get("switchPoints", []))
+            for block in blocks
+        )
+
+    @property
+    def extra_state_attributes(self):
+
+        raw = self._raw
+
+        attributes = {"oid": self.schedule["oid"]}
+
+        if raw is not None:
+            attributes["schedule"] = raw.get("value", [])
+
+        return attributes

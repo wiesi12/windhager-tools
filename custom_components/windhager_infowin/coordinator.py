@@ -87,3 +87,40 @@ class WindhagerNvCoordinator(DataUpdateCoordinator):
             self.system.poll_nv
         )
 
+
+class WindhagerScheduleCoordinator(DataUpdateCoordinator):
+    """Coordinator (Default: alle 5 Minuten) fuer Zeitprogramme
+    (Schaltzeiten). Eigene, separate Coordinator-Klasse statt
+    Verquickung mit dem generischen Poller/NV-Mechanismus, damit der
+    bereits gut getestete, produktiv laufende Poll-Pfad fuer die
+    ueblichen OID-Sensoren unangetastet bleibt. Zeitprogramme aendern
+    sich selten (manuelle Nutzeraenderung), ein 5-Minuten-Intervall
+    reicht dafuer aus.
+    """
+
+    def __init__(
+        self,
+        hass,
+        config_entry,
+        system,
+        update_interval_minutes=5,
+    ):
+
+        super().__init__(
+            hass,
+            logger=_LOGGER,
+            config_entry=config_entry,
+            name=f"{DOMAIN}_schedule",
+            update_interval=timedelta(
+                minutes=update_interval_minutes
+            ),
+        )
+
+        self.system = system
+
+    async def _async_update_data(self):
+
+        return await self.hass.async_add_executor_job(
+            self.system.poll_schedules
+        )
+
