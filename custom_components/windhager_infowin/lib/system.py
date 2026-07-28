@@ -84,6 +84,7 @@ class WindhagerSystem:
         selected_module_ids=None,
         selected_groups_by_module=None,
         selected_nv_groups=None,
+        boiler_module_id=None,
     ):
 
         self.client = client
@@ -99,6 +100,16 @@ class WindhagerSystem:
         # "nv_group_counters"]). None = alle NV-Gruppen behalten
         # (Rueckwaertskompatibilitaet).
         self.selected_nv_groups = selected_nv_groups
+
+        # Modul-ID des Waermeerzeugers, vom Nutzer im Options Flow
+        # gewaehlt (siehe config_flow.py::async_step_select_boiler) -
+        # dient den Plattform-Dateien als via_device-Ziel fuer die
+        # Geraete-Hierarchie. None = keine Hierarchie (flache
+        # Geraete-Struktur, bisheriges Verhalten). Bewusst KEINE
+        # automatische Erkennung: manche Waermeerzeuger (z.B. BioWIN)
+        # haben keinen aussagekraeftigen eigenen Funktionstyp, jeder
+        # Rateversuch waere nur ein verstecktes Hardcoding.
+        self.boiler_module_id = boiler_module_id
 
         self.modules = None
         self.poller = None

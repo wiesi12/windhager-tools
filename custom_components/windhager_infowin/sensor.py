@@ -117,7 +117,7 @@ async def async_setup_entry(
         "schedule_coordinator"
     ]
     entities.extend(
-        WindhagerScheduleSensor(schedule_coordinator, schedule)
+        WindhagerScheduleSensor(schedule_coordinator, system, schedule)
         for schedule in system.schedules
     )
 
@@ -456,6 +456,7 @@ class WindhagerSensor(
             manufacturer="Windhager",
             model="InfoWIN",
             name=module.name,
+            via_device=naming.via_device(self.system, module),
         )
 
     @property
@@ -634,11 +635,13 @@ class WindhagerScheduleSensor(
     def __init__(
         self,
         coordinator,
+        system,
         schedule,
     ):
 
         super().__init__(coordinator)
 
+        self.system = system
         self.schedule = schedule
 
     @property
@@ -678,6 +681,7 @@ class WindhagerScheduleSensor(
                     f"module2_{module.id}",
                 )
             },
+            via_device=naming.via_device(self.system, module),
         )
 
     @property

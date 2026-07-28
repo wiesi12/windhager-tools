@@ -491,3 +491,20 @@ def test_write_schedule_raises_for_unknown_oid():
             "/1/99/0/3/61/0",
             blocks=[],
         )
+
+
+def test_boiler_module_id_defaults_to_none():
+
+    system = system_module.WindhagerSystem(FakeClient())
+
+    assert system.boiler_module_id is None
+
+
+def test_boiler_module_id_stored_when_given():
+
+    system = system_module.WindhagerSystem(
+        FakeClient(),
+        boiler_module_id=60,
+    )
+
+    assert system.boiler_module_id == 60

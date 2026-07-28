@@ -66,6 +66,13 @@
                 "data": {
                     "nv_groups": "NV sensor groups"
                 }
+            },
+            "select_boiler": {
+                "title": "Device hierarchy",
+                "description": "Optionally choose which module is your boiler/heat generator. Other modules (e.g. heating circuits) will then show up as \"connected via\" that device instead of as flat, unrelated devices. There's no reliable way to detect this automatically across different boiler models, so it's a manual choice. Leave at \"None\" to keep the current flat structure.",
+                "data": {
+                    "boiler_module_id": "Boiler / heat generator module"
+                }
             }
         }
     }

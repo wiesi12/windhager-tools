@@ -117,6 +117,7 @@ class WindhagerSelect(
                     f"module2_{module.id}",
                 )
             },
+            via_device=naming.via_device(self.system, module),
         )
 
     @property

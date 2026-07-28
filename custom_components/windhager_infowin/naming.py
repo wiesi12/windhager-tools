@@ -1,4 +1,38 @@
 from . import nv_names
+from .const import DOMAIN
+
+
+def via_device(system, module):
+    """Device-Identifier-Tupel fuer via_device liefern, falls fuer
+    dieses Modul eine Geraete-Hierarchie konfiguriert ist - sonst
+    None (flache Struktur, Standardverhalten).
+
+    system.boiler_module_id wird vom Nutzer im Options Flow gewaehlt
+    (siehe config_flow.py::async_step_select_boiler) - es gibt
+    bewusst KEINE automatische Erkennung, da sich "das ist der
+    Waermeerzeuger" nicht zuverlaessig aus den Modul-Metadaten
+    ableiten laesst (manche Waermeerzeuger wie BioWIN haben keinen
+    aussagekraeftigen eigenen Funktionstyp).
+    """
+
+    boiler_module_id = getattr(
+        system,
+        "boiler_module_id",
+        None,
+    )
+
+    if boiler_module_id is None:
+        return None
+
+    if module.id == boiler_module_id:
+        # Das Waermeerzeuger-Geraet selbst braucht kein via_device
+        # auf sich selbst.
+        return None
+
+    return (
+        DOMAIN,
+        f"module2_{boiler_module_id}",
+    )
 
 
 def build_entity_name(entry, lookup):

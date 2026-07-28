@@ -102,6 +102,12 @@ async def async_setup_entry(
             "selected_nv_groups"
         )
 
+        # None = keine Geraete-Hierarchie (Rueckwaertskompatibilitaet/
+        # Standard, siehe config_flow.py::async_step_select_boiler)
+        boiler_module_id = entry.data.get(
+            "boiler_module_id"
+        )
+
         return WindhagerSystem(
             client,
             str(
@@ -112,6 +118,7 @@ async def async_setup_entry(
             selected_module_ids=selected_module_ids,
             selected_groups_by_module=selected_groups_by_module,
             selected_nv_groups=selected_nv_groups,
+            boiler_module_id=boiler_module_id,
         )
 
     system = await hass.async_add_executor_job(

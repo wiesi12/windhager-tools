@@ -150,10 +150,14 @@
 ### Devices
 
 - [x] Basic device per module
-- [ ] Better device hierarchy via `via_device` — mark HK1/HK2/HK3 as
-      connected through BioWIN. Needs a generic way to identify "the
-      boiler" module without hardcoding "BioWIN". Revisit when data
-      from other installations is available.
+- [x] Device hierarchy via `via_device` (2026-07-28): rather than
+      guessing which module is "the boiler" (unreliable — e.g. BioWIN
+      has no distinguishing function type of its own, all its data
+      comes through NV variables), the user explicitly picks the
+      heat generator module in the Options Flow
+      (`config_flow.py::async_step_select_boiler`). Default "none"
+      keeps the previous flat structure. Verified live: HK1/HK3
+      devices now report `via_device_id` pointing at BioWIN.
 
 ### Branding / Packaging
 
@@ -194,7 +198,6 @@
 
 ## Future
 
-- [ ] Better device hierarchy via `via_device` (see Devices above)
 - [ ] Firmware capability report
 - [ ] Parallelized/faster initial discovery (rejected for now —
       risk to heating controller not worth the time saved)

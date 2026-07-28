@@ -692,6 +692,88 @@ class WindhagerOptionsFlow(
             }
         )
 
+    async def async_step_select_boiler(
+        self,
+        user_input=None,
+    ):
+        """Waermeerzeuger fuer die Geraete-Hierarchie auswaehlen
+        (via_device).
+
+        Eine automatische Erkennung ("das ist der Kessel") ist NICHT
+        zuverlaessig moeglich - manche Waermeerzeuger (z.B. BioWIN)
+        haben gar keinen aussagekraeftigen eigenen Funktionstyp,
+        ihre Daten laufen komplett ueber NV-Variablen. Deshalb waehlt
+        der Nutzer hier explizit, statt dass geraten wird. Default
+        "none" = keine Hierarchie (heutiges Verhalten unveraendert).
+
+        Nur bereits ausgewaehlte Module stehen zur Auswahl - ein
+        via_device auf ein nicht angelegtes Geraet waere sonst ein
+        haengender Verweis.
+        """
+
+        if user_input is not None:
+
+            selected = user_input["boiler_module_id"]
+
+            self._pending_data["boiler_module_id"] = (
+                None
+                if selected == "none"
+                else int(selected)
+            )
+
+            return await self.async_step_poll_intervals()
+
+        options = [
+            selector.SelectOptionDict(
+                value="none",
+                label="None (flat device structure)",
+            )
+        ] + [
+            selector.SelectOptionDict(
+                value=str(module.id),
+                label=module.name,
+            )
+            for module in self._selected_modules
+        ]
+
+        selected_ids = {
+            str(module.id)
+            for module in self._selected_modules
+        }
+
+        previous = self.config_entry.data.get(
+            "boiler_module_id"
+        )
+
+        # Falls das zuvor gewaehlte Modul zwischenzeitlich abgewaehlt
+        # wurde, auf "none" zurueckfallen statt einen ungueltigen
+        # Default an den Selector zu uebergeben.
+        default = (
+            str(previous)
+            if previous is not None
+            and str(previous) in selected_ids
+            else "none"
+        )
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    "boiler_module_id",
+                    default=default,
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="select_boiler",
+            data_schema=schema,
+        )
+
     async def async_step_poll_intervals(
         self,
         user_input=None,
@@ -952,7 +1034,7 @@ class WindhagerOptionsFlow(
         all_modules = getattr(self, "_all_modules", None)
 
         if all_modules is None:
-            return await self.async_step_poll_intervals()
+            return await self.async_step_select_boiler()
 
         selected_ids = {
             str(m.id) for m in self._selected_modules
@@ -977,13 +1059,13 @@ class WindhagerOptionsFlow(
 
         # Kein Modul hat NV-Eintraege -> ueberspringen
         if not nv_groups:
-            return await self.async_step_poll_intervals()
+            return await self.async_step_select_boiler()
 
         if user_input is not None:
             self._pending_data["selected_nv_groups"] = (
                 user_input.get("nv_groups", [])
             )
-            return await self.async_step_poll_intervals()
+            return await self.async_step_select_boiler()
 
         previously_selected = self.config_entry.data.get(
             "selected_nv_groups",
