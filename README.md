@@ -155,8 +155,10 @@ Connect) with your system, it may have changed the local webserver's
 password during that initial pairing process, without ever showing
 it to you in plain text. In that case, two options to get back in:
 
+- You can still view the current password if you go to [Windhager Connect](https://connect.windhager.com)
+  click on your System and manually change the url from https://connect.windhager.com/systems/xxx-xxx-xxx-xxx-xxx/paramaters to https://connect.windhager.com/systems/xxx-xxx-xxx-xxx-xxx/settings , on   the bottom of the page you should see a Button "change Webserverpassword" in the popup you can view   the current password or change it there
 - If you have access to the [Windhager Connect](https://connect.windhager.com)
-  web portal (same login as the app), there may be a "Change webserver
+ web portal (same login as the app), there may be a "Change webserver
   password" option under your system's settings that lets you reset
   it to the default (`123`) directly – this didn't appear to be
   available on every account/system in informal testing, so YMMV.
