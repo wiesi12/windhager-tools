@@ -53,6 +53,27 @@ class WindhagerConfigFlow(
 
         if user_input is not None:
 
+            # Host bereinigen: Schema (http://, https://) und
+            # trailing Slashes entfernen, damit der Client nicht
+            # eine doppelte URL wie http://http://... baut.
+            # Hintergrund: mehrere Nutzer haben cannot_connect
+            # gemeldet weil sie den Host mit Schema eingegeben haben
+            # (z.B. "http://192.168.1.198") - das fuehrt zu einer
+            # ungültigen URL im Client ohne sichtbaren Logeintrag,
+            # weil der Fehler vor dem eigentlichen HTTP-Request
+            # auftritt. (GitHub Issue #1)
+            host = user_input["host"].strip().rstrip("/")
+            for prefix in ("https://", "http://"):
+                if host.startswith(prefix):
+                    host = host[len(prefix):]
+                    break
+            host = host.rstrip("/")
+
+            user_input = {
+                **user_input,
+                "host": host,
+            }
+
             client = WindhagerClient(
                 user_input["host"],
                 user_input["username"],
