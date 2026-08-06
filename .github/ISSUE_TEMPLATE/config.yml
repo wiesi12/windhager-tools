@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/wiesi12/windhager-tools/discussions
+    about: General questions, configuration help, and community discussion
+  - name: Home Assistant Community Forum
+    url: https://community.home-assistant.io/t/custom-integration-windhager-infowin-pellet-wood-heating-systems-via-local-rest-api/1015543
+    about: Community forum thread for this integration

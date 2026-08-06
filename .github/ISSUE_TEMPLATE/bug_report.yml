@@ -1,0 +1,84 @@
+name: Bug Report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill in as much detail as possible — especially the logs, they're the most useful thing for diagnosing issues.
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "e.g. 2026.8.0"
+    validations:
+      required: true
+
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      placeholder: "e.g. v0.10.2"
+    validations:
+      required: true
+
+  - type: input
+    id: webserver_model
+    attributes:
+      label: Windhager webserver model and firmware
+      description: Found on the login page of the webserver (e.g. http://192.168.x.x)
+      placeholder: "e.g. InfoWIN Touch RC7030, firmware S 1.0.2"
+    validations:
+      required: true
+
+  - type: input
+    id: installation_method
+    attributes:
+      label: Installation method
+      placeholder: "HACS (custom repository) / HACS (default store) / Manual"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+        Go to **Settings → System → Logs**, filter by "windhager", and paste the relevant lines here.
+        To enable debug logging, add this to your `configuration.yaml`:
+        ```yaml
+        logger:
+          logs:
+            custom_components.windhager_infowin: debug
+        ```
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might be relevant (screenshots, dashboard config, etc.)
+    validations:
+      required: false

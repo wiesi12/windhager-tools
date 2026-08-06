@@ -1,0 +1,62 @@
+name: Compatibility Report
+description: Report whether the integration works (or doesn't) on your installation
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This integration has only been tested on a single installation (BioWIN pellet boiler, MES INFINITY, RC7030 firmware S 1.0.2). Reports from other installations — successful or not — are very welcome and help improve compatibility for everyone.
+
+  - type: input
+    id: boiler_model
+    attributes:
+      label: Boiler/heating system model
+      placeholder: "e.g. BioWIN 2, LogWIN, PuroWIN, ..."
+    validations:
+      required: true
+
+  - type: input
+    id: control_system
+    attributes:
+      label: Control system
+      placeholder: "e.g. MES INFINITY, MES PLUS, ..."
+    validations:
+      required: false
+
+  - type: input
+    id: webserver
+    attributes:
+      label: Webserver model and firmware
+      description: Found on the login page (http://your-windhager-ip)
+      placeholder: "e.g. InfoWIN Touch RC7030, firmware S 1.0.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Does the integration work?
+      options:
+        - "✅ Yes, fully working"
+        - "⚠️ Partially working (some things work, some don't)"
+        - "❌ Not working"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: |
+        What works? What doesn't? Any error messages or unexpected behavior?
+        If it doesn't work at all, please include log output (Settings → System → Logs, filter by "windhager").
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might be useful (number of modules, special configuration, etc.)
+    validations:
+      required: false
