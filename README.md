@@ -136,7 +136,8 @@ Configure**:
 2. Search for "Windhager"
 3. Enter the following:
    - **Host**: IP address or hostname of the Windhager webserver
-     (e.g. `192.168.1.198`)
+     (e.g. `192.168.1.198`). Entering with or without `http://` and
+     with or without a trailing slash all work fine.
    - **Username**: Login for the webserver (often `USER` by default
      after a factory reset)
    - **Password**: Password for the webserver (often `123` by
@@ -195,9 +196,10 @@ INFINITY** control system.
   [domfie/windhager-rest-api-documentation](https://github.com/domfie/windhager-rest-api-documentation)).
   This API appears to have a different structure than the (older)
   REST API used here – this integration **probably won't work**
-  with it without significant changes. If you have such a system and
-  want to try it anyway, I'd appreciate a report via Issue (whether
-  it works or not).
+  with it without significant changes. This has been confirmed by at
+  least one user with a LogWIN2 DELUXE Touch (GitHub Issue #2). If
+  you have such a system and want to try it anyway, I'd appreciate a
+  report via Issue (whether it works or not).
 
 ### Untested / unclear
 

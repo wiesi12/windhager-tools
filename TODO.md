@@ -193,6 +193,12 @@
 - [x] Unit tests (41 tests, 2026-06-30)
 - [x] Community forum post (2026-06-29)
 - [x] HACS default store PR submitted (2026-07-05) — pending review
+- [x] First real-world users (2026-08): 3 users found the integration
+      via GitHub/community posts. Issue #1 (cannot_connect when host
+      includes schema/trailing slash) fixed in v0.10.2 by stripping
+      http://, https:// and trailing slashes from host input in
+      config_flow.py. Issue #2 (LogWIN2 DELUXE Touch / comWinStack API)
+      confirmed not compatible — documented in README.
 
 ---
 
