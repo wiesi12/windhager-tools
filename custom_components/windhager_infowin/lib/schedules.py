@@ -145,8 +145,8 @@ def discover_schedules(client, modules, language=DEFAULT_LANGUAGE):
                         else None
                     )
 
-                    if status == 409:
-                        # Diese Position gilt fuer diese Funktion
+                    if status in (404, 409):
+                        # 404/409: Position gilt fuer diese Funktion
                         # nicht - normal, kein Fehler.
                         continue
 

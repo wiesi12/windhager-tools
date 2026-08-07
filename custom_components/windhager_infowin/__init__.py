@@ -585,6 +585,13 @@ async def _reconcile_entities(
 
         if entity_entry.domain != correct_domain:
 
+            _LOGGER.info(
+                "Removing entity %s (domain mismatch: is %s, should be %s)",
+                entity_entry.entity_id,
+                entity_entry.domain,
+                correct_domain,
+            )
+
             registry.async_remove(
                 entity_entry.entity_id
             )
