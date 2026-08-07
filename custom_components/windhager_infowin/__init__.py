@@ -575,9 +575,21 @@ async def _reconcile_entities(
             )
         )
 
+        is_boolean = (
+            is_writable
+            and not has_enum
+            and entry_obj.min_value is not None
+            and entry_obj.max_value is not None
+            and float(str(entry_obj.min_value).replace(",", ".")) == 0.0
+            and float(str(entry_obj.max_value).replace(",", ".")) == 1.0
+            and getattr(entry_obj, "unit_id", None) == 0
+        )
+
         # Die korrekte Domain fuer diese OID bestimmen:
         if is_writable and has_enum:
             correct_domain = "select"
+        elif is_writable and is_boolean:
+            correct_domain = "switch"
         elif is_writable and has_numeric_range:
             correct_domain = "number"
         else:
