@@ -1,9 +1,12 @@
+import logging
 import time
 from pathlib import Path
 
 from homeassistant import config_entries
 from homeassistant.helpers import selector
 import voluptuous as vol
+
+_LOGGER = logging.getLogger(__name__)
 
 from .const import DATA_DIR, DOMAIN
 from .language import resolve_language
@@ -100,6 +103,10 @@ class WindhagerConfigFlow(
                 # praktikabelste Option, ohne library-weite Aenderungen
                 # vorzunehmen.
 
+                _LOGGER.exception(
+                    "Connection attempt failed for host %s",
+                    user_input["host"],
+                )
                 errors["base"] = "cannot_connect"
 
             else:
