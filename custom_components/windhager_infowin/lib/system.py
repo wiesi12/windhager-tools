@@ -125,7 +125,7 @@ class WindhagerSystem:
 
         if self.catalog_path.exists():
 
-            print("Lade Katalog...")
+            _LOGGER.debug("Loading catalog from %s", self.catalog_path)
 
             try:
 
@@ -148,9 +148,10 @@ class WindhagerSystem:
                 # ein aelterer, gespeicherter Katalog nicht mehr zum
                 # aktuellen Code passt.
 
-                print(
-                    f"Katalog beschaedigt oder inkompatibel "
-                    f"({error}) - lösche und crawle neu..."
+                _LOGGER.warning(
+                    "Catalog corrupt or incompatible (%s) — "
+                    "deleting and re-crawling",
+                    error,
                 )
 
                 self.catalog_path.unlink(
@@ -159,7 +160,7 @@ class WindhagerSystem:
 
         if all_modules is None:
 
-            print("Starte Discovery...")
+            _LOGGER.info("No catalog found — starting discovery crawl")
 
             all_modules, enum_texts = crawl(
                 self.client,
