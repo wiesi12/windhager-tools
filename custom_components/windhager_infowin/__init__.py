@@ -10,6 +10,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_platform import async_get_platforms
 
 from .lib import (
     WindhagerClient,
@@ -328,7 +329,7 @@ async def async_setup_entry(
         system,
     )
 
-    await _reconcile_entities(
+    await _reconcile_entity_domains(
         hass,
         entry,
         system,
@@ -337,6 +338,11 @@ async def async_setup_entry(
     await hass.config_entries.async_forward_entry_setups(
         entry,
         ["sensor", "number", "select", "button", "switch"],
+    )
+
+    await _reconcile_stale_entities(
+        hass,
+        entry,
     )
 
     if not existing_nv_entities:
@@ -467,42 +473,28 @@ async def _refresh_then_reconcile(
     )
 
 
-async def _reconcile_entities(
+async def _reconcile_entity_domains(
     hass: HomeAssistant,
     entry: ConfigEntry,
     system: WindhagerSystem,
 ) -> None:
-    """Entities entfernen, die zu einem FRUEHEREN Zeitpunkt erstellt
-    wurden (z.B. eine Sensor-Gruppe, die frueher ausgewaehlt war),
-    aber bei der AKTUELLEN Gruppen-Auswahl (system.oid_map, bereits
-    gefiltert durch selected_modules/selected_groups) nicht mehr
-    vorkommen.
+    """Catalog-Entities entfernen, die in der FALSCHEN Domain registriert sind.
 
-    Ergaenzt _reconcile_devices() um eine Ebene: ein Modul kann
-    weiterhin ausgewaehlt sein (das Geraet existiert also weiter),
-    aber EINZELNE Sensor-Gruppen darunter koennen ueber den Options
-    Flow abgewaehlt worden sein - das faengt die Geraete-Bereinigung
-    nicht ab, da das Geraet selbst ja bestehen bleibt.
+    Muss VOR async_forward_entry_setups laufen, weil HA eine neue Entity
+    nicht anlegen kann, solange eine andere Entity mit derselben unique_id
+    in einer anderen Domain existiert (unique_id ist global eindeutig).
 
-    Beruecksichtigt auch DOMAIN-WECHSEL: wenn eine Entity frueher
-    als 'sensor' angelegt wurde, jetzt aber (z.B. nach Einfuehrung
-    von Write-Support) als 'select' oder 'number' erzeugt werden
-    sollte, entfernt diese Funktion den alten 'sensor'-Eintrag,
-    damit HA die Entity beim naechsten Setup in der richtigen Domain
-    neu anlegen kann. Ohne das bleibt z.B. 'Betriebswahl' dauerhaft
-    als unavailable sensor.* stehen, obwohl sie jetzt als select.*
-    erzeugt werden wuerde.
+    Beispiel: 'Betriebswahl' war frueher als sensor.* angelegt; seit
+    Write-Support soll sie als select.* erzeugt werden. Ohne vorherige
+    Bereinigung wuerde HA die select-Entity ablehnen.
 
-    Selbes Muster wie bei _reconcile_devices() und
-    _reconcile_entity_categories(): HA entfernt Entities, die eine
-    Integration bei einem Setup-Durchlauf nicht mehr erzeugt, NICHT
-    automatisch aus der Registry - das muss die Integration aktiv
-    selbst tun. Ohne das wuerden abgewaehlte Sensor-Gruppen dauerhaft
-    als "nicht verfuegbar" sichtbar bleiben, statt zu verschwinden.
+    Beruehrt NUR Catalog-Entries (OIDs in system.oid_map). Alle anderen
+    windhager_v2_-Entries (hardcodierte Buttons, spezielle Sensoren, ...)
+    werden hier uebersprungen - die bereinigt _reconcile_stale_entities()
+    nach dem Platform-Setup anhand der tatsaechlich erstellten Entities.
     """
 
     registry = er.async_get(hass)
-
     removed_count = 0
 
     for entity_entry in er.async_entries_for_config_entry(
@@ -511,74 +503,33 @@ async def _reconcile_entities(
     ):
 
         unique_id = (
-            getattr(
-                entity_entry,
-                "unique_id",
-                "",
-            )
-            or ""
+            getattr(entity_entry, "unique_id", "") or ""
         )
 
         if not unique_id.startswith("windhager_v2_"):
             continue
 
-        oid = unique_id[
-            len("windhager_v2_"):
-        ]
+        oid = unique_id[len("windhager_v2_"):]
 
         if oid not in system.oid_map:
-
-            _LOGGER.info(
-                "Removing entity %s (OID %s not in catalog)",
-                entity_entry.entity_id,
-                oid,
-            )
-
-            registry.async_remove(
-                entity_entry.entity_id
-            )
-
-            removed_count += 1
             continue
 
-        # Domain-Wechsel pruefen: wenn eine Entity in der falschen
-        # Domain registriert ist (z.B. alter 'sensor' fuer eine OID
-        # die jetzt als 'select'/'number' erzeugt werden wuerde, oder
-        # umgekehrt ein alter 'number' fuer eine OID die jetzt als
-        # 'sensor' landet), den alten Eintrag entfernen damit HA die
-        # Entity in der richtigen Domain neu anlegen kann.
         info = system.oid_map[oid]
         entry_obj = info["entry"]
 
-        is_nv = oid.startswith("nv:")
-
-        if is_nv:
+        if oid.startswith("nv:"):
             continue
 
-        is_writable = not getattr(
-            entry_obj,
-            "write_protected",
-            True,
-        )
+        is_writable = not getattr(entry_obj, "write_protected", True)
 
-        has_enum = bool(
-            getattr(
-                entry_obj,
-                "enum",
-                None,
-            )
-        )
+        has_enum = bool(getattr(entry_obj, "enum", None))
 
         has_numeric_range = (
             entry_obj.min_value is not None
             and entry_obj.max_value is not None
             and entry_obj.min_value != entry_obj.max_value
             and not has_enum
-            and getattr(entry_obj, "unit_id", None) not in (
-                0,
-                20,
-                21,
-            )
+            and getattr(entry_obj, "unit_id", None) not in (0, 20, 21)
         )
 
         try:
@@ -594,7 +545,6 @@ async def _reconcile_entities(
         except (ValueError, TypeError):
             is_boolean = False
 
-        # Die korrekte Domain fuer diese OID bestimmen:
         if is_writable and has_enum:
             correct_domain = "select"
         elif is_writable and is_boolean:
@@ -613,17 +563,72 @@ async def _reconcile_entities(
                 correct_domain,
             )
 
-            registry.async_remove(
-                entity_entry.entity_id
-            )
-
+            registry.async_remove(entity_entry.entity_id)
             removed_count += 1
 
     if removed_count:
+        _LOGGER.info(
+            "%d entity/entities removed (domain change)",
+            removed_count,
+        )
+
+
+async def _reconcile_stale_entities(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Registry-Eintraege entfernen, die beim letzten Setup nicht erzeugt wurden.
+
+    Laeuft NACH async_forward_entry_setups, wenn alle Plattformen ihre
+    Entities bereits registriert haben. Sammelt alle unique_ids der
+    tatsaechlich angelegten Entities und entfernt alles, was in der
+    Registry steht, aber nicht (mehr) erstellt wurde - egal ob Catalog-
+    Entity, Button, spezieller Sensor oder zukuenftige neue Entity-Typen.
+
+    Universell: kein Hardcode fuer bestimmte OIDs oder Entity-Typen.
+    Disabled Entities werden uebersprungen - sie sind bewusst deaktiviert
+    und sollen nicht entfernt werden.
+    """
+
+    active_unique_ids = {
+        entity.unique_id
+        for platform in async_get_platforms(hass, DOMAIN)
+        for entity in platform.entities.values()
+        if entity.unique_id
+    }
+
+    registry = er.async_get(hass)
+    removed_count = 0
+
+    for entity_entry in er.async_entries_for_config_entry(
+        registry,
+        entry.entry_id,
+    ):
+
+        unique_id = (
+            getattr(entity_entry, "unique_id", "") or ""
+        )
+
+        if not unique_id.startswith("windhager_v2_"):
+            continue
+
+        if entity_entry.disabled_by is not None:
+            continue
+
+        if unique_id in active_unique_ids:
+            continue
 
         _LOGGER.info(
-            "%d stale entity/entities removed "
-            "(deselected or domain change)",
+            "Removing entity %s (not created during setup, likely deselected)",
+            entity_entry.entity_id,
+        )
+
+        registry.async_remove(entity_entry.entity_id)
+        removed_count += 1
+
+    if removed_count:
+        _LOGGER.info(
+            "%d stale entity/entities removed (deselected or obsolete)",
             removed_count,
         )
 
