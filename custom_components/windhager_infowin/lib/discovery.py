@@ -12,10 +12,10 @@ def discover_modules(client):
         module = Module(
             id=item["nodeId"],
             name=item["name"],
-            group=item["group"],
-            subnet=item["subnet"],
-            program_id=item["programId"],
-            neuron_id=item["neuronId"]
+            group=item.get("group", ""),
+            subnet=item.get("subnet", 0),
+            program_id=item.get("programId", ""),
+            neuron_id=item.get("neuronId", ""),
         )
 
         modules.append(module)
@@ -33,9 +33,9 @@ def discover_functions(client, module):
 
         function = Function(
             id=item["fctId"],
-            type=item["fctType"],
-            name=item["name"],
-            locked=item["lock"]
+            type=item.get("fctType", -1),
+            name=item.get("name", ""),
+            locked=item.get("lock", False),
         )
 
         functions.append(function)
@@ -57,7 +57,7 @@ def discover_lookups(client, module, function):
 
         lookup = Lookup(
             id=item["id"],
-            count=item["count"]
+            count=item.get("count", 0),
         )
 
         lookups.append(lookup)
