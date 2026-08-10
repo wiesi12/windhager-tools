@@ -528,6 +528,12 @@ async def _reconcile_entities(
 
         if oid not in system.oid_map:
 
+            _LOGGER.info(
+                "Removing entity %s (OID %s not in catalog)",
+                entity_entry.entity_id,
+                oid,
+            )
+
             registry.async_remove(
                 entity_entry.entity_id
             )
