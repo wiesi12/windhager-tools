@@ -1,3 +1,7 @@
+import logging
+
+import requests
+
 from .discovery import (
     discover_modules,
     discover_functions,
@@ -8,6 +12,8 @@ from .resources import (
     DEFAULT_LANGUAGE,
     Resources,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def crawl_structure(client, language=DEFAULT_LANGUAGE):
@@ -40,11 +46,21 @@ def crawl_structure(client, language=DEFAULT_LANGUAGE):
 
         for function in module.functions:
 
-            discover_lookups(
-                client,
-                module,
-                function,
-            )
+            try:
+                discover_lookups(
+                    client,
+                    module,
+                    function,
+                )
+            except requests.HTTPError as exc:
+                _LOGGER.debug(
+                    "Skipping lookups for module %s function %s: %s",
+                    module.id,
+                    function.id,
+                    exc,
+                )
+                function.lookups = []
+                continue
 
             for lookup in function.lookups:
 
@@ -83,11 +99,21 @@ def crawl(client, language=DEFAULT_LANGUAGE):
 
         for function in module.functions:
 
-            discover_lookups(
-                client,
-                module,
-                function,
-            )
+            try:
+                discover_lookups(
+                    client,
+                    module,
+                    function,
+                )
+            except requests.HTTPError as exc:
+                _LOGGER.debug(
+                    "Skipping lookups for module %s function %s: %s",
+                    module.id,
+                    function.id,
+                    exc,
+                )
+                function.lookups = []
+                continue
 
             for lookup in function.lookups:
 
