@@ -260,11 +260,32 @@ async def async_setup_entry(
         ),
     )
 
-    # Blockierend warten ist hier unproblematisch (anders als beim
-    # NV-Refresh oben) - Zeitprogramme sind wenige, einzeln adressierte
-    # Objekte (siehe lib/schedules.py), kein 80-280-Request-Discovery-
-    # Burst.
-    await schedule_coordinator.async_config_entry_first_refresh()
+    existing_schedule_entities = any(
+        (getattr(e, "unique_id", "") or "").startswith("windhager_schedule_")
+        for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    )
+
+    if existing_schedule_entities:
+
+        _LOGGER.debug(
+            "Existing schedule entities found - "
+            "schedule refresh running in background",
+        )
+
+        entry.async_create_background_task(
+            hass,
+            schedule_coordinator.async_refresh(),
+            name=f"{DOMAIN}_schedule_first_refresh",
+        )
+
+    else:
+
+        _LOGGER.info(
+            "No existing schedule entities found - "
+            "waiting for first schedule refresh",
+        )
+
+        await schedule_coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})
 
