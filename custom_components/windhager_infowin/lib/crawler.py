@@ -52,7 +52,7 @@ def crawl_structure(client, language=DEFAULT_LANGUAGE):
                     module,
                     function,
                 )
-            except requests.HTTPError as exc:
+            except (requests.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
                 _LOGGER.debug(
                     "Skipping lookups for module %s function %s: %s",
                     module.id,
@@ -105,7 +105,7 @@ def crawl(client, language=DEFAULT_LANGUAGE):
                     module,
                     function,
                 )
-            except requests.HTTPError as exc:
+            except (requests.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
                 _LOGGER.debug(
                     "Skipping lookups for module %s function %s: %s",
                     module.id,

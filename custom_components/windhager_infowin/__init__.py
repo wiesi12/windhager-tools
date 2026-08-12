@@ -294,6 +294,7 @@ async def async_setup_entry(
         "coordinator": coordinator,
         "nv_coordinator": nv_coordinator,
         "schedule_coordinator": schedule_coordinator,
+        "platforms_loaded": False,
     }
 
     if not hass.services.has_service(DOMAIN, "set_schedule"):
@@ -360,6 +361,8 @@ async def async_setup_entry(
         entry,
         ["sensor", "number", "select", "button", "switch"],
     )
+
+    hass.data[DOMAIN][entry.entry_id]["platforms_loaded"] = True
 
     await _reconcile_stale_entities(
         hass,
@@ -780,12 +783,16 @@ async def async_unload_entry(
     entry: ConfigEntry,
 ) -> bool:
 
-    unload_ok = await hass.config_entries.async_unload_platforms(
-        entry,
-        ["sensor", "number", "select", "button", "switch"],
-    )
+    entry_data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
 
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+    if entry_data.get("platforms_loaded"):
+        unload_ok = await hass.config_entries.async_unload_platforms(
+            entry,
+            ["sensor", "number", "select", "button", "switch"],
+        )
+    else:
+        unload_ok = True
+
+    hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
 
     return unload_ok
