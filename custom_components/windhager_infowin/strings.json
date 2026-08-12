@@ -30,6 +30,9 @@
         }
     },
     "options": {
+        "abort": {
+            "catalog_missing": "The device catalog has not been built yet. Reload the integration first (Settings → Devices & Services → Windhager InfoWIN → three-dot menu → Reload) and then try opening Configure again."
+        },
         "step": {
             "select_modules": {
                 "title": "Select modules",

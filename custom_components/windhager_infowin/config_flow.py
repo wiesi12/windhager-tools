@@ -436,11 +436,14 @@ class WindhagerOptionsFlow(
 
             return all_modules
 
-        self._all_modules = (
-            await self.hass.async_add_executor_job(
-                _load
+        try:
+            self._all_modules = (
+                await self.hass.async_add_executor_job(
+                    _load
+                )
             )
-        )
+        except FileNotFoundError:
+            return self.async_abort(reason="catalog_missing")
 
         return await self.async_step_select_modules()
 

@@ -125,12 +125,23 @@ def crawl(client, language=DEFAULT_LANGUAGE):
                     or ""
                 )
 
-                lookup.entries = read_lookup(
-                    client,
-                    module,
-                    function,
-                    lookup,
-                )
+                try:
+                    lookup.entries = read_lookup(
+                        client,
+                        module,
+                        function,
+                        lookup,
+                    )
+                except (requests.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+                    _LOGGER.debug(
+                        "Skipping entries for module %s function %s lookup %s: %s",
+                        module.id,
+                        function.id,
+                        lookup.id,
+                        exc,
+                    )
+                    lookup.entries = []
+                    continue
 
                 for entry in lookup.entries:
 
