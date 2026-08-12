@@ -175,7 +175,7 @@
 
 - [x] MES INFINITY + InfoWIN Touch (RC7030, firmware S 1.0.2) — tested
 - [ ] MES PLUS (older, non-Touch) — untested, likely compatible
-- [ ] Newer firmware / comWinStack API — likely NOT compatible
+- [x] Newer firmware / comWinStack API — confirmed NOT compatible (Issue #2: LogWIN2 DELUXE Touch uses comWinStack API, which is a different protocol)
 - [ ] Multiple firmware versions / automatic capability detection
 - [x] Missing XML entries handling (graceful fallback)
 - [ ] Unknown modules handling — generic discovery code should work,
