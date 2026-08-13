@@ -1,3 +1,7 @@
+> [!WARNING]
+> **Dieses Repository wird nicht mehr weiterentwickelt.**
+> Bitte wechselt zu [xicetea/windhager-tools](https://github.com/xicetea/windhager-tools) — aktiv maintained und feature-reicher.
+
 # Windhager InfoWIN – Home Assistant Integration
 
 A custom integration for Home Assistant that connects to Windhager
