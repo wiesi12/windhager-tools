@@ -1,6 +1,10 @@
+>[!WARNING]
+> **This repository is no longer under active development.**
+> Please switch to [xIceTea/HeatNexus](https://github.com/xicetea/HeatNexus) — it is actively maintained and feature-rich.
+-----
 > [!WARNING]
 > **Dieses Repository wird nicht mehr weiterentwickelt.**
-> Bitte wechselt zu [xicetea/windhager-tools](https://github.com/xicetea/windhager-tools) — aktiv maintained und feature-reicher.
+> Bitte wechselt zu [xIceTea/HeatNexus](https://github.com/xicetea/HeatNexus) — aktiv maintained und feature-reicher.
 
 # Windhager InfoWIN – Home Assistant Integration
 
